@@ -40,7 +40,7 @@ error save_tga(const tchar* fname, const u8* rgb, size rgb_size, u32 width, u32 
 	file.write((const char*)header, sizeof(header));
 
 	// Write data
-	for(s32 y = (s32)height - 1; y >= 0; y--)
+	for(u32 y = 0; y < height; y++)
 		for(u32 x = 0; x < width; x++)
 		{
 			const u32 idx = (u32)y * width * 3 + x * 3;
