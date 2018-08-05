@@ -2,6 +2,7 @@
 #include <engine/math/public/all.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <cstdio>
 
 int main(int, char**)
 {
@@ -10,17 +11,23 @@ int main(int, char**)
 	const u32 width = 256;
 	const u32 height = 128;
 
-	vec3 cam_pos = vec3(0.0f);
+	vec3 cam_pos = vec3(0.0f, 1.0f, 0.0f);
 
-	mat4x4 view_mat = lookAt(cam_pos, vec3(0.0f, 0.0f, -1.0f), vec3(0.0f, 1.0f, 0.0f));
+	mat4x4 view_mat = lookAt(vec3(0.0f, 0.0f, -1.0f), cam_pos, vec3(0.0f, 1.0f, 0.0f));
 	mat4x4 cam_trf = inverse(view_mat);
 	mat4x4 proj_mat = perspective(glm::radians(45.0f), (f32)width / (f32)height, 0.1f, 100.0f);
 	mat4x4 vp_mat = proj_mat * view_mat;
 	mat4x4 inv_vp_mat = inverse(vp_mat);
 
 	sphere sphere;
-	sphere.center = vec3(0.0f, 0.0f, -5.0f);
+	sphere_init(&sphere);
+	sphere.center = vec3(0.0f, 1.0f, -5.0f);
 	sphere.radius = 1.0f;
+
+	plane plane;
+	plane_init(&plane);
+	plane.offset = 0.0f;
+	plane.normal = vec3(0.0f, 1.0f, 0.0f);
 
 	u8 data[height][width][3];
 	for(u32 w = 0; w < width; ++w)
@@ -34,19 +41,20 @@ int main(int, char**)
 			ray.direction = mat3x3(cam_trf) * view_dir;
 			ray.origin = cam_pos;
 
-			vec3 color(0.0f);
-			f32 ray_t = ray_hit_sphere(ray, sphere);
-			if(ray_t > 0.0f)
-			{
-				vec3 normal = normalize(ray.origin + ray.direction * ray_t - sphere.center);
-				color = normal / 2.0f + 0.5f;
-			}
-			else
-			{
-				const vec3 c_a(0.0f, 0.0f, 1.0f);
-				const vec3 c_b(1.0f);
+			const vec3 c_a(0.0f, 0.0f, 1.0f);
+			const vec3 c_b(1.0f);
+			vec3 color = mix(c_a, c_b, (f32)h / height);
 
-				color = mix(c_a, c_b, (f32)h / height);
+			ray_hit hit;
+
+			if(ray_cast_plane(ray, plane, 0.0f, 100.0f, &hit))
+			{
+				color = vec3(1.0f, 0.0f, 0.0f);
+			}
+
+			if(ray_cast(ray, sphere.base, 0.0f, 100.0f, &hit))
+			{
+				color = hit.normal / 2.0f + 0.5f;
 			}
 
 			color = clamp(color, 0.0f, 1.0f);

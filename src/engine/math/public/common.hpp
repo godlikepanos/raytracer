@@ -8,5 +8,10 @@
 #include <glm/mat4x4.hpp>
 
 RT_BEGIN_NAMESPACE
+
 using namespace glm;
+
+struct ray;
+struct sphere;
+
 RT_END_NAMESPACE
