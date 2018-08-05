@@ -25,4 +25,7 @@ bool ray_cast_plane(const ray& ray, const plane& plane, f32 t_min, f32 t_max, ra
 
 bool ray_cast(const ray& ray, const collision_shape& shape, f32 t_min, f32 t_max, ray_hit* hit);
 
+// Other
+vec3 rand_direction_in_cone(const vec3& cone_dir, f32 cone_angle);
+
 RT_END_NAMESPACE

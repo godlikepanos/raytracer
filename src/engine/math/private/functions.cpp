@@ -66,4 +66,31 @@ bool ray_cast(const ray& ray, const collision_shape& shape, f32 t_min, f32 t_max
 	return intersects;
 }
 
+vec3 rand_direction_in_cone(const vec3& cone_dir, f32 cone_angle)
+{
+	f32 phi = (f32)rand() / RAND_MAX; // angle to z
+	phi = phi * 2.0f - 1.0f;
+	phi *= cone_angle;
+	phi = M_PI / 2.0f - phi;
+
+	f32 theta = (f32)rand() / RAND_MAX; // angle to x
+	theta = theta * 2.0f - 1.0f;
+	theta *= cone_angle;
+
+	vec3 rand_dir; // around x axis
+	rand_dir.x = cos(theta) * sin(phi);
+	rand_dir.y = sin(theta) * sin(phi);
+	rand_dir.z = cos(phi);
+
+	// Create a rot matrix
+	vec3 x_axis = cone_dir;
+	vec3 y_axis = vec3(0.0f, 1.0f, 0.0f);
+	vec3 z_axis = cross(x_axis, y_axis);
+	y_axis = cross(z_axis, x_axis);
+
+	mat3 rot(x_axis, y_axis, z_axis);
+
+	return rot * rand_dir;
+}
+
 RT_END_NAMESPACE

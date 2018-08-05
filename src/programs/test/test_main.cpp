@@ -8,8 +8,8 @@ int main(int, char**)
 {
 	using namespace RT_NAMESPACE;
 
-	const u32 width = 256;
-	const u32 height = 128;
+	const u32 width = 512;
+	const u32 height = 256;
 
 	vec3 cam_pos = vec3(0.0f, 1.0f, 0.0f);
 
@@ -49,12 +49,40 @@ int main(int, char**)
 
 			if(ray_cast_plane(ray, plane, 0.0f, 100.0f, &hit))
 			{
-				color = vec3(1.0f, 0.0f, 0.0f);
+				vec3 rand_dir = rand_direction_in_cone(hit.normal, M_PI);
+
+				struct ray new_ray;
+				new_ray.direction = rand_dir;
+				new_ray.origin = hit.point;
+				bool intersects = ray_cast_sphere(new_ray, sphere, 0.01f, 100.0f, &hit);
+
+				if(intersects)
+				{
+					color = vec3(0.5f, 0.0f, 0.0f);
+				}
+				else
+				{
+					color = vec3(1.0f, 0.0f, 0.0f);
+				}
 			}
 
 			if(ray_cast(ray, sphere.base, 0.0f, 100.0f, &hit))
 			{
-				color = hit.normal / 2.0f + 0.5f;
+				vec3 rand_dir = rand_direction_in_cone(hit.normal, M_PI - 0.01f);
+
+				struct ray new_ray;
+				new_ray.direction = rand_dir;
+				new_ray.origin = hit.point;
+				bool intersects = ray_cast_plane(new_ray, plane, 0.01f, 100.0f, &hit);
+
+				if(intersects)
+				{
+					color = vec3(0.0f, 0.5f, 0.0f);
+				}
+				else
+				{
+					color = vec3(0.0f, 1.0f, 0.0f);
+				}
 			}
 
 			color = clamp(color, 0.0f, 1.0f);
