@@ -1,5 +1,7 @@
 #include <engine/math/public/functions.hpp>
 #include <engine/math/public/types.hpp>
+#include <engine/util/public/functions.hpp>
+#include <cstdio>
 
 RT_BEGIN_NAMESPACE
 
@@ -68,29 +70,25 @@ bool ray_cast(const ray& ray, const collision_shape& shape, f32 t_min, f32 t_max
 
 vec3 rand_direction_in_cone(const vec3& cone_dir, f32 cone_angle)
 {
-	f32 phi = (f32)rand() / RAND_MAX; // angle to z
-	phi = phi * 2.0f - 1.0f;
-	phi *= cone_angle;
-	phi = M_PI / 2.0f - phi;
+	// https://math.stackexchange.com/questions/56784/generate-a-random-direction-within-a-cone/205589#205589
 
-	f32 theta = (f32)rand() / RAND_MAX; // angle to x
-	theta = theta * 2.0f - 1.0f;
-	theta *= cone_angle;
-
-	vec3 rand_dir; // around x axis
-	rand_dir.x = cos(theta) * sin(phi);
-	rand_dir.y = sin(theta) * sin(phi);
-	rand_dir.z = cos(phi);
+	// Create a random vector where the cone angle is in +z
+	f32 cos_cone_angle = cos(cone_angle);
+	f32 z = rand_0f_1f() * (1.0f - cos_cone_angle) + cos_cone_angle;
+	f32 phi = rand_0f_1f() * 2.0f * M_PI;
+	f32 sq = sqrt(1.0f - z * z);
+	f32 x = sq * cos(phi);
+	f32 y = sq * sin(phi);
 
 	// Create a rot matrix
-	vec3 x_axis = cone_dir;
-	vec3 y_axis = vec3(0.0f, 1.0f, 0.0f);
-	vec3 z_axis = cross(x_axis, y_axis);
-	y_axis = cross(z_axis, x_axis);
+	vec3 z_axis = cone_dir;
+	vec3 x_axis = vec3(1.0f, 0.0f, 0.0f);
+	vec3 y_axis = cross(z_axis, x_axis);
+	x_axis = cross(y_axis, z_axis);
 
 	mat3 rot(x_axis, y_axis, z_axis);
 
-	return rot * rand_dir;
+	return rot * vec3(x, y, z);
 }
 
 RT_END_NAMESPACE

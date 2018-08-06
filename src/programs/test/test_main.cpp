@@ -49,40 +49,40 @@ int main(int, char**)
 
 			if(ray_cast_plane(ray, plane, 0.0f, 100.0f, &hit))
 			{
-				vec3 rand_dir = rand_direction_in_cone(hit.normal, M_PI);
-
-				struct ray new_ray;
-				new_ray.direction = rand_dir;
-				new_ray.origin = hit.point;
-				bool intersects = ray_cast_sphere(new_ray, sphere, 0.01f, 100.0f, &hit);
-
-				if(intersects)
+				u32 sample_count = 5;
+				u32 intersection_count = 0;
+				for(u32 i = 0; i < sample_count; ++i)
 				{
-					color = vec3(0.5f, 0.0f, 0.0f);
+					vec3 rand_dir = rand_direction_in_cone(hit.normal, M_PI / 2.0f - 0.01f);
+
+					struct ray new_ray;
+					new_ray.direction = rand_dir;
+					new_ray.origin = hit.point;
+					struct ray_hit new_hit;
+					bool intersects = ray_cast_sphere(new_ray, sphere, 0.01f, 100.0f, &new_hit);
+					intersection_count += intersects;
 				}
-				else
-				{
-					color = vec3(1.0f, 0.0f, 0.0f);
-				}
+
+				color = vec3(1.0f, 0.0f, 0.0f) * (1.0f - ((f32)intersection_count / sample_count));
 			}
 
 			if(ray_cast(ray, sphere.base, 0.0f, 100.0f, &hit))
 			{
-				vec3 rand_dir = rand_direction_in_cone(hit.normal, M_PI - 0.01f);
-
-				struct ray new_ray;
-				new_ray.direction = rand_dir;
-				new_ray.origin = hit.point;
-				bool intersects = ray_cast_plane(new_ray, plane, 0.01f, 100.0f, &hit);
-
-				if(intersects)
+				u32 sample_count = 5;
+				u32 intersection_count = 0;
+				for(u32 i = 0; i < sample_count; ++i)
 				{
-					color = vec3(0.0f, 0.5f, 0.0f);
+					vec3 rand_dir = rand_direction_in_cone(hit.normal, M_PI / 2.0f - 0.01f);
+
+					struct ray new_ray;
+					new_ray.direction = rand_dir;
+					new_ray.origin = hit.point;
+					struct ray_hit new_hit;
+					bool intersects = ray_cast_plane(new_ray, plane, 0.01f, 100.0f, &new_hit);
+					intersection_count += intersects;
 				}
-				else
-				{
-					color = vec3(0.0f, 1.0f, 0.0f);
-				}
+
+				color = vec3(0.0f, 1.0f, 0.0f) * (1.0f - ((f32)intersection_count / sample_count));
 			}
 
 			color = clamp(color, 0.0f, 1.0f);
