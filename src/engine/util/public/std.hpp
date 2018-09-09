@@ -21,7 +21,7 @@ using s16 = int16_t;
 using s32 = int32_t;
 using s64 = int64_t;
 
-using size = std::size_t;
+using tsize = std::size_t;
 
 using f32 = float;
 using f64 = double;
@@ -31,5 +31,6 @@ const error ERROR_NONE = 0;
 const error ERROR_FILE_ACCESS = 1;
 
 using tchar = wchar_t;
+using boolean = int;
 
 RT_END_NAMESPACE

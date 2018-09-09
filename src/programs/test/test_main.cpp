@@ -20,12 +20,12 @@ int main(int, char**)
 	mat4x4 inv_vp_mat = inverse(vp_mat);
 
 	sphere sphere;
-	sphere_init(&sphere);
+	sphere_init(sphere);
 	sphere.center = vec3(0.0f, 1.0f, -5.0f);
 	sphere.radius = 1.0f;
 
 	plane plane;
-	plane_init(&plane);
+	plane_init(plane);
 	plane.offset = 0.0f;
 	plane.normal = vec3(0.0f, 1.0f, 0.0f);
 
@@ -47,7 +47,7 @@ int main(int, char**)
 
 			ray_hit hit;
 
-			if(ray_cast_plane(ray, plane, 0.0f, 100.0f, &hit))
+			if(ray_cast_plane(ray, plane, 0.0f, 100.0f, hit))
 			{
 				u32 sample_count = 5;
 				u32 intersection_count = 0;
@@ -59,14 +59,14 @@ int main(int, char**)
 					new_ray.direction = rand_dir;
 					new_ray.origin = hit.point;
 					struct ray_hit new_hit;
-					bool intersects = ray_cast_sphere(new_ray, sphere, 0.01f, 100.0f, &new_hit);
-					intersection_count += intersects;
+					boolean intersects = ray_cast_sphere(new_ray, sphere, 0.01f, 100.0f, new_hit);
+					intersection_count += (u32)intersects;
 				}
 
 				color = vec3(1.0f, 0.0f, 0.0f) * (1.0f - ((f32)intersection_count / sample_count));
 			}
 
-			if(ray_cast(ray, sphere.base, 0.0f, 100.0f, &hit))
+			if(ray_cast(ray, sphere.base, 0.0f, 100.0f, hit))
 			{
 				u32 sample_count = 5;
 				u32 intersection_count = 0;
@@ -78,8 +78,8 @@ int main(int, char**)
 					new_ray.direction = rand_dir;
 					new_ray.origin = hit.point;
 					struct ray_hit new_hit;
-					bool intersects = ray_cast_plane(new_ray, plane, 0.01f, 100.0f, &new_hit);
-					intersection_count += intersects;
+					boolean intersects = ray_cast_plane(new_ray, plane, 0.01f, 100.0f, new_hit);
+					intersection_count += (u32)intersects;
 				}
 
 				color = vec3(0.0f, 1.0f, 0.0f) * (1.0f - ((f32)intersection_count / sample_count));

@@ -5,7 +5,7 @@
 
 RT_BEGIN_NAMESPACE
 
-bool ray_cast_sphere(const ray& ray, const sphere& sphere, f32 t_min, f32 t_max, ray_hit* hit)
+boolean ray_cast_sphere(const ray& ray, const sphere& sphere, f32 t_min, f32 t_max, ray_hit& hit)
 {
 	vec3 oc = ray.origin - sphere.center;
 	f32 a = dot(ray.direction, ray.direction);
@@ -18,9 +18,9 @@ bool ray_cast_sphere(const ray& ray, const sphere& sphere, f32 t_min, f32 t_max,
 		f32 tmp = (-b - sqrt(d)) / a;
 		if(tmp < t_max && tmp > t_min)
 		{
-			hit->t = tmp;
-			hit->point = ray.origin + ray.direction * hit->t;
-			hit->normal = (hit->point - sphere.center) / sphere.radius;
+			hit.t = tmp;
+			hit.point = ray.origin + ray.direction * hit.t;
+			hit.normal = (hit.point - sphere.center) / sphere.radius;
 			return true;
 		}
 	}
@@ -28,7 +28,7 @@ bool ray_cast_sphere(const ray& ray, const sphere& sphere, f32 t_min, f32 t_max,
 	return false;
 }
 
-bool ray_cast_plane(const ray& ray, const plane& plane, f32 t_min, f32 t_max, ray_hit* hit)
+boolean ray_cast_plane(const ray& ray, const plane& plane, f32 t_min, f32 t_max, ray_hit& hit)
 {
 	f32 d = plane_point_distance(plane, ray.origin);
 	f32 a = dot(plane.normal, ray.direction);
@@ -38,10 +38,10 @@ bool ray_cast_plane(const ray& ray, const plane& plane, f32 t_min, f32 t_max, ra
 		f32 tmp = -d / a;
 		if(tmp < t_max && tmp > t_min)
 		{
-			hit->t = -d / a;
-			assert(hit->t > 0.0f);
-			hit->point = ray.origin + ray.direction * hit->t;
-			hit->normal = plane.normal;
+			hit.t = -d / a;
+			assert(hit.t > 0.0f);
+			hit.point = ray.origin + ray.direction * hit.t;
+			hit.normal = plane.normal;
 			return true;
 		}
 	}
@@ -49,9 +49,9 @@ bool ray_cast_plane(const ray& ray, const plane& plane, f32 t_min, f32 t_max, ra
 	return false;
 }
 
-bool ray_cast(const ray& ray, const collision_shape& shape, f32 t_min, f32 t_max, ray_hit* hit)
+boolean ray_cast(const ray& ray, const collision_shape& shape, f32 t_min, f32 t_max, ray_hit& hit)
 {
-	bool intersects;
+	boolean intersects;
 	switch(shape.type)
 	{
 	case collision_shape_type::SPHERE:
@@ -89,6 +89,16 @@ vec3 rand_direction_in_cone(const vec3& cone_dir, f32 cone_angle)
 	mat3 rot(x_axis, y_axis, z_axis);
 
 	return rot * vec3(x, y, z);
+}
+
+vec3 rand_point_in_unit_sphere()
+{
+	vec3 p;
+	do
+		p = 2.0f * vec3(drand48(), drand48(), drand48()) - vec3(1.0f);
+	while(p.length() <= 1.0f);
+
+	return p;
 }
 
 RT_END_NAMESPACE
