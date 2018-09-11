@@ -11,26 +11,26 @@
 
 RT_BEGIN_NAMESPACE
 
-using u8 = uint8_t;
-using u16 = uint16_t;
-using u32 = uint32_t;
-using u64 = uint64_t;
+using u8_t = uint8_t;
+using u16_t = uint16_t;
+using u32_t = uint32_t;
+using u64_t = uint64_t;
 
-using s8 = int8_t;
-using s16 = int16_t;
-using s32 = int32_t;
-using s64 = int64_t;
+using s8_t = int8_t;
+using s16_t = int16_t;
+using s32_t = int32_t;
+using s64_t = int64_t;
 
-using tsize = std::size_t;
+using size_t = std::size_t;
 
-using f32 = float;
-using f64 = double;
+using f32_t = float;
+using f64_t = double;
 
-using error = int;
-const error ERROR_NONE = 0;
-const error ERROR_FILE_ACCESS = 1;
+using error_t = int;
+const error_t ERROR_NONE = 0;
+const error_t ERROR_FILE_ACCESS = 1;
 
-using tchar = wchar_t;
-using boolean = int;
+using char_t = wchar_t;
+using bool_t = int;
 
 RT_END_NAMESPACE

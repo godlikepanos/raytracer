@@ -4,8 +4,9 @@
 
 RT_BEGIN_NAMESPACE
 
-struct material
+struct material_t
 {
+	vec4_t diffuse_color;
 };
 
 RT_END_NAMESPACE

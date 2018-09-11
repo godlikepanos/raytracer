@@ -4,6 +4,6 @@
 
 RT_BEGIN_NAMESPACE
 
-error save_tga(const tchar* fname, const u8* rgb, tsize rgb_size, u32 width, u32 height);
+error_t save_tga(const char_t* fname, const u8_t* rgb, size_t rgb_size, u32_t width, u32_t height);
 
 RT_END_NAMESPACE

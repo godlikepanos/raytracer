@@ -1,45 +1,55 @@
 #pragma once
 
-#include "common.hpp"
+#include <engine/util/public/std.hpp>
+#include <glm/vec4.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec2.hpp>
+#include <glm/mat4x4.hpp>
 
 RT_BEGIN_NAMESPACE
 
-enum collision_shape_type : u8
+using vec2_t = glm::vec2;
+using vec3_t = glm::vec3;
+using vec4_t = glm::vec4;
+using mat3_t = glm::mat3;
+using mat4_t = glm::mat4;
+
+enum collision_shape_type_e : u8_t
 {
 	SPHERE,
 	PLANE,
 };
 
-struct collision_shape
+struct collision_shape_t
 {
-	collision_shape_type type;
+	collision_shape_type_e type;
 };
 
-struct ray
+struct ray_t
 {
-	vec3 origin;
-	vec3 direction;
+	vec3_t origin;
+	vec3_t direction;
 };
 
-struct ray_hit
+struct ray_hit_t
 {
-	vec3 point;
-	vec3 normal;
-	f32 t;
+	vec3_t point;
+	vec3_t normal;
+	f32_t t;
 };
 
-struct sphere
+struct sphere_t
 {
-	collision_shape base;
-	vec3 center;
-	f32 radius;
+	collision_shape_t base;
+	vec3_t center;
+	f32_t radius;
 };
 
-struct plane
+struct plane_t
 {
-	collision_shape base;
-	vec3 normal;
-	f32 offset;
+	collision_shape_t base;
+	vec3_t normal;
+	f32_t offset;
 };
 
 RT_END_NAMESPACE

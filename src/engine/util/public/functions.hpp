@@ -4,9 +4,16 @@
 
 RT_BEGIN_NAMESPACE
 
-f32 rand_0f_1f()
+inline f32_t rand_0f_1f()
 {
-	return (f32)rand() / RAND_MAX;
+	return (f32_t)drand48();
+}
+
+template<typename t>
+t* new_array(u32_t size)
+{
+	assert(size > 0);
+	return (t*)malloc(sizeof(t) * size);
 }
 
 RT_END_NAMESPACE

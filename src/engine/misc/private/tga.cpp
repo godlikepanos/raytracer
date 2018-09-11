@@ -6,7 +6,7 @@
 
 RT_BEGIN_NAMESPACE
 
-error save_tga(const tchar* fname, const u8* rgb, tsize rgb_size, u32 width, u32 height)
+error_t save_tga(const char_t* fname, const u8_t* rgb, size_t rgb_size, u32_t width, u32_t height)
 {
 	assert(fname && rgb && rgb_size > 0 && (rgb_size % 3) == 0 && width && height);
 
@@ -19,7 +19,7 @@ error save_tga(const tchar* fname, const u8* rgb, tsize rgb_size, u32 width, u32
 
 	int ret = std::wcsrtombs(&ansi_string[0], &fname, ansi_string.size(), &mbs);
 	assert(ret < (int)ansi_string.size());
-	ansi_string[(u32)ret] = '\0';
+	ansi_string[(u32_t)ret] = '\0';
 
 	// Open file
 	std::ofstream file;
@@ -29,7 +29,7 @@ error save_tga(const tchar* fname, const u8* rgb, tsize rgb_size, u32 width, u32
 		return ERROR_FILE_ACCESS;
 
 	// Write header
-	u8 header[18] = {0};
+	u8_t header[18] = {0};
 	header[2] = 2;
 	header[12] = width & 0xFF;
 	header[13] = (width >> 8) & 0xFF;
@@ -40,10 +40,10 @@ error save_tga(const tchar* fname, const u8* rgb, tsize rgb_size, u32 width, u32
 	file.write((const char*)header, sizeof(header));
 
 	// Write data
-	for(u32 y = 0; y < height; y++)
-		for(u32 x = 0; x < width; x++)
+	for(u32_t y = 0; y < height; y++)
+		for(u32_t x = 0; x < width; x++)
 		{
-			const u32 idx = (u32)y * width * 3 + x * 3;
+			const u32_t idx = (u32_t)y * width * 3 + x * 3;
 			assert(idx + 2 < rgb_size);
 
 			file.put((char)rgb[idx + 2]);
