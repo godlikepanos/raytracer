@@ -31,6 +31,6 @@ const error_t ERROR_NONE = 0;
 const error_t ERROR_FILE_ACCESS = 1;
 
 using char_t = wchar_t;
-using bool_t = int;
+using bool_t = bool;
 
 RT_END_NAMESPACE

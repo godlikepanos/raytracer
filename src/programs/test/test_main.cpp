@@ -24,11 +24,9 @@ int main(int, char**)
 	rqueue.renderables = new_array<renderable_t>(2);
 	rqueue.renderable_count = 2;
 
-	sphere_init(rqueue.renderables[0].sphere);
 	rqueue.renderables[0].sphere.center = vec3_t(0.0f, 1.0f, -5.0f);
 	rqueue.renderables[0].sphere.radius = 1.0f;
 
-	plane_init(rqueue.renderables[1].plane);
 	rqueue.renderables[1].plane.offset = 0.0f;
 	rqueue.renderables[1].plane.normal = vec3_t(0.0f, 1.0f, 0.0f);
 

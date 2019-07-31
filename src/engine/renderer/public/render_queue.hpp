@@ -10,10 +10,10 @@ struct renderable_t
 {
 	union
 	{
-		collision_shape_t base;
 		sphere_t sphere;
 		plane_t plane;
 	};
+	collision_shape_type_e shape_type;
 
 	material_t material;
 };

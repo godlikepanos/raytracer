@@ -49,25 +49,6 @@ bool_t ray_cast_plane(const ray_t& ray, const plane_t& plane, f32_t t_min, f32_t
 	return false;
 }
 
-bool_t ray_cast(const ray_t& ray, const collision_shape_t& shape, f32_t t_min, f32_t t_max, ray_hit_t& hit)
-{
-	bool_t intersects;
-	switch(shape.type)
-	{
-	case collision_shape_type_e::SPHERE:
-		intersects = ray_cast_sphere(ray, *(const sphere_t*)&shape, t_min, t_max, hit);
-		break;
-	case collision_shape_type_e::PLANE:
-		intersects = ray_cast_plane(ray, *(const plane_t*)&shape, t_min, t_max, hit);
-		break;
-	default:
-		assert(0);
-		intersects = false;
-	}
-
-	return intersects;
-}
-
 vec3_t rand_direction_in_cone(const vec3_t& cone_dir, f32_t cone_angle)
 {
 	// https://math.stackexchange.com/questions/56784/generate-a-random-direction-within-a-cone/205589#205589

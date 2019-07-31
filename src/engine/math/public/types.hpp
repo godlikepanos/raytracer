@@ -16,13 +16,8 @@ using mat4_t = glm::mat4;
 
 enum collision_shape_type_e : u8_t
 {
-	SPHERE,
-	PLANE,
-};
-
-struct collision_shape_t
-{
-	collision_shape_type_e type;
+	COLLISION_SHAPE_TYPE_SPHERE,
+	COLLISION_SHAPE_TYPE_PLANE,
 };
 
 struct ray_t
@@ -40,14 +35,12 @@ struct ray_hit_t
 
 struct sphere_t
 {
-	collision_shape_t base;
 	vec3_t center;
 	f32_t radius;
 };
 
 struct plane_t
 {
-	collision_shape_t base;
 	vec3_t normal;
 	f32_t offset;
 };
