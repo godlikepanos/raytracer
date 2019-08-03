@@ -1,8 +1,6 @@
 #!/bin/bash
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-
-files=(`find ./src -name '*.h' -o -name '*.hpp' -o -name '*.c' -o -name '*.cpp' -o -name '*.glsl'`)
+files=(`find ./src -name '*.h' -o -name '*.hpp' -o -name '*.c' -o -name '*.cpp'`)
 
 filecount=${#files[@]}
 
@@ -11,7 +9,7 @@ for f in ${files[@]}
 do
 	# Run it in parallel
 	echo -ne Formatting ${count}/${filecount}\\r
-	${DIR}/clang-format -sort-includes=false -i ${f} &
+	./src/bin/clang-format -sort-includes=false -i ${f} &
 	count=$((${count}+1))
 
 	# Throttle the parallel commands
