@@ -1,6 +1,7 @@
 #pragma once
 
 #include <engine/math/types.h>
+#include <engine/util/functions.h>
 
 // Misc
 static inline f32_t min(f32_t a, f32_t b) {
@@ -28,6 +29,10 @@ static inline vec2_t vec2_init_f(f32_t f) {
 static inline vec2_t vec2_init_2f(f32_t x, f32_t y) {
 	const vec2_t v = {x, y};
 	return v;
+}
+
+static inline vec2_t vec2_mix(vec2_t a, vec2_t b, vec2_t f) {
+	return a * (vec2_init_f(1.0f) - f) + b * f;
 }
 
 // vec3_t
@@ -92,14 +97,14 @@ static inline f32_t vec4_dot(vec4_t a, vec4_t b) {
 }
 
 // mat3_t
-mat3_t mat3_init_mat4(const mat4_t* m4);
-vec3_t mat3_mul_vec3(const mat3_t* m, vec3_t v);
+mat3_t mat3_init_mat4(const mat4_t *m4);
+vec3_t mat3_mul_vec3(const mat3_t *m, vec3_t v);
 
 // mat4_t
 mat4_t mat4_init_f(f32_t f);
-mat4_t mat4_mul_mat4(const mat4_t* a, const mat4_t* b);
-vec4_t mat4_mul_vec4(const mat4_t* a, vec4_t b);
-mat4_t mat4_invert(const mat4_t* mat);
+mat4_t mat4_mul_mat4(const mat4_t *a, const mat4_t *b);
+vec4_t mat4_mul_vec4(const mat4_t *a, vec4_t b);
+mat4_t mat4_invert(const mat4_t *mat);
 mat4_t look_at(vec3_t eye, vec3_t center, vec3_t up);
 mat4_t perspective(f32_t fovy, f32_t aspect, f32_t near, f32_t far);
 
@@ -115,10 +120,20 @@ static inline plane_t plane_init(vec3_t normal, f32_t offset) {
 	return p;
 }
 
-static inline f32_t plane_point_distance(const plane_t* plane, vec3_t point) {
+static inline f32_t plane_point_distance(const plane_t *plane, vec3_t point) {
 	return vec3_dot(plane->normal, point) - plane->offset;
 }
 
 // Ray intersection
-bool_t ray_cast_sphere(const ray_t* ray, const sphere_t* sphere, f32_t t_min, f32_t t_max, ray_hit_t* hit);
-bool_t ray_cast_plane(const ray_t* ray, const plane_t* plane, f32_t t_min, f32_t t_max, ray_hit_t* hit);
+bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f32_t t_max, ray_hit_t *hit);
+bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t t_max, ray_hit_t *hit);
+
+// Other
+static inline vec3_t random_in_init_sphere() {
+	vec3_t out;
+	do {
+		out = vec3_init_3f(rand_0f_to_1f(), rand_0f_to_1f(), rand_0f_to_1f());
+		out = out * 2.0f - 1.0f;
+	} while(vec3_length(out) <= 1.0f);
+	return out;
+}

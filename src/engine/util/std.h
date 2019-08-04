@@ -13,16 +13,16 @@ typedef int8_t   i8_t;
 typedef int16_t  i16_t;
 typedef int32_t  i32_t;
 typedef int64_t  i64_t;
+typedef float    f32_t;
+typedef double   f64_t;
+typedef char     char_t;
+typedef _Bool    bool_t;
+typedef int      error_t;
 
-typedef float  f32_t;
-typedef double f64_t;
-
-typedef int			 error_t;
-static const error_t ERROR_NONE		   = 0;
+static const error_t ERROR_NONE        = 0;
 static const error_t ERROR_FILE_ACCESS = 1;
 
-typedef char char_t;
-
-typedef _Bool		bool_t;
 static const bool_t TRUE  = 1;
 static const bool_t FALSE = 0;
+
+#define NELEMS(arr) (sizeof(arr) / sizeof(arr[0]))
