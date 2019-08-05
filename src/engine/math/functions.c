@@ -140,10 +140,10 @@ mat4_t look_at(vec3_t eye, vec3_t center, vec3_t up) {
 }
 
 mat4_t perspective(f32_t fovy, f32_t aspect, f32_t near, f32_t far) {
-	const f32_t f  = 1.0f / tanf(fovy * 0.5f);
+	const f32_t f = 1.0f / tanf(fovy * 0.5f);
 	const f32_t fn = 1.0f / (near - far);
 
-	mat4_t dest  = mat4_init_f(0.0f);
+	mat4_t dest = mat4_init_f(0.0f);
 	dest.m[0][0] = f / aspect;
 	dest.m[1][1] = f;
 	dest.m[2][2] = (near + far) * fn;
@@ -155,16 +155,16 @@ mat4_t perspective(f32_t fovy, f32_t aspect, f32_t near, f32_t far) {
 
 bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f32_t t_max, ray_hit_t *hit) {
 	vec3_t oc = ray->origin - sphere->center;
-	f32_t  a  = vec3_dot(ray->direction, ray->direction);
-	f32_t  b  = vec3_dot(oc, ray->direction);
-	f32_t  c  = vec3_dot(oc, oc) - sphere->radius * sphere->radius;
-	f32_t  d  = b * b - a * c;
+	f32_t a = vec3_dot(ray->direction, ray->direction);
+	f32_t b = vec3_dot(oc, ray->direction);
+	f32_t c = vec3_dot(oc, oc) - sphere->radius * sphere->radius;
+	f32_t d = b * b - a * c;
 
 	if(d > 0.0f) {
 		f32_t tmp = (-b - sqrtf(d)) / a;
 		if(tmp < t_max && tmp > t_min) {
-			hit->t      = tmp;
-			hit->point  = ray->origin + ray->direction * hit->t;
+			hit->t = tmp;
+			hit->point = ray->origin + ray->direction * hit->t;
 			hit->normal = (hit->point - sphere->center) / sphere->radius;
 			return TRUE;
 		}
@@ -182,7 +182,7 @@ bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t
 		if(tmp < t_max && tmp > t_min) {
 			hit->t = -d / a;
 			assert(hit->t > 0.0f);
-			hit->point  = ray->origin + ray->direction * hit->t;
+			hit->point = ray->origin + ray->direction * hit->t;
 			hit->normal = plane->normal;
 			return TRUE;
 		}

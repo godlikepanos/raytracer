@@ -11,12 +11,12 @@ error_t save_tga(const char_t *fname, const u8_t *rgb, size_t rgb_size, u32_t wi
 
 	// Write header
 	u8_t header[18] = {0};
-	header[2]       = 2;
-	header[12]      = width & 0xFF;
-	header[13]      = (width >> 8) & 0xFF;
-	header[14]      = height & 0xFF;
-	header[15]      = (height >> 8) & 0xFF;
-	header[16]      = 24;
+	header[2] = 2;
+	header[12] = width & 0xFF;
+	header[13] = (width >> 8) & 0xFF;
+	header[14] = height & 0xFF;
+	header[15] = (height >> 8) & 0xFF;
+	header[16] = 24;
 
 	fwrite((const char *)header, 1, sizeof(header), file);
 

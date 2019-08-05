@@ -56,9 +56,8 @@ static inline f32_t vec3_length(vec3_t a) {
 }
 
 static inline vec3_t vec3_normalize(vec3_t a) {
-	const f32_t  len = vec3_length(a);
-	const vec3_t y   = vec3_init_f(len);
-	return a / y;
+	const f32_t len = vec3_length(a);
+	return a / len;
 }
 
 static inline vec3_t vec3_cross(vec3_t a, vec3_t b) {
@@ -79,6 +78,10 @@ static inline vec3_t vec3_clamp(vec3_t a, vec3_t min_v, vec3_t max_v) {
 	out.y = max(min_v.y, min(a.y, max_v.y));
 	out.z = max(min_v.z, min(a.z, max_v.z));
 	return out;
+}
+
+static inline vec3_t vec3_reflect(vec3_t v, vec3_t n) {
+	return v - 2.0f * vec3_dot(v, n) * n;
 }
 
 // vec4_t
@@ -124,7 +127,13 @@ static inline f32_t plane_point_distance(const plane_t *plane, vec3_t point) {
 	return vec3_dot(plane->normal, point) - plane->offset;
 }
 
-// Ray intersection
+// Ray
+static inline ray_t ray_init(vec3_t point, vec3_t normal) {
+	assert(vec3_length(normal) <= 1.0f + EPSILON);
+	const ray_t out = {point, normal};
+	return out;
+}
+
 bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 
