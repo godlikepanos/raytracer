@@ -15,23 +15,6 @@ void init_subsamples(u32_t width, u32_t height, vec2_t *subsamples) {
 	}
 }
 
-bool_t lambertian_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                          ray_t *scattered_ray) {
-	(void)in_ray;
-	const vec3_t target = hit->point + hit->normal + random_in_init_sphere();
-	*scattered_ray = ray_init(hit->point, vec3_normalize(target - hit->point));
-	*attenuation = mtl->albedo;
-	return TRUE;
-}
-
-bool_t metal_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                     ray_t *scattered_ray) {
-	const vec3_t reflected = vec3_reflect(in_ray->direction, hit->normal);
-	*scattered_ray = ray_init(hit->point, vec3_normalize(reflected));
-	*attenuation = mtl->albedo;
-	return vec3_dot(reflected, hit->normal) > 0.0f;
-}
-
 bool_t closest_hit(const render_graph_t *rgraph, const ray_t *ray, ray_hit_t *closest_hit, const material_t **hit_mtl) {
 	closest_hit->t = INFINITY;
 	bool_t has_hit = FALSE;
@@ -93,19 +76,24 @@ int main(int argc, char **argv) {
 	init_subsamples(width, height, subsamples);
 
 	// Render graph
-	renderable_sphere_t s[4] = {0};
+	renderable_sphere_t s[5];
+	memset(s, 0, sizeof(s));
 	s[0].sphere = sphere_init(vec3_init_3f(0.0f, 0.0f, -1.0f), 0.5f);
 	s[0].material.scatter_callback = lambertian_scatter;
-	s[0].material.albedo = vec3_init_3f(0.8f, 0.3f, 0.3f);
+	s[0].material.albedo = vec3_init_3f(0.1f, 0.2f, 0.5f);
 	s[1].sphere = sphere_init(vec3_init_3f(0.0f, -100.5f, -1.0f), 100.0f);
 	s[1].material.scatter_callback = lambertian_scatter;
 	s[1].material.albedo = vec3_init_3f(0.8f, 0.8f, 0.0f);
 	s[2].sphere = sphere_init(vec3_init_3f(1.0f, 0.0f, -1.0f), 0.5f);
 	s[2].material.scatter_callback = metal_scatter;
 	s[2].material.albedo = vec3_init_3f(0.8f, 0.6f, 0.2f);
+	s[2].material.metal_fuzz = 0.05f;
 	s[3].sphere = sphere_init(vec3_init_3f(-1.0f, 0.0f, -1.0f), 0.5f);
-	s[3].material.scatter_callback = metal_scatter;
-	s[3].material.albedo = vec3_init_3f(0.8f, 0.8f, 0.8f);
+	s[3].material.scatter_callback = dielectric_scatter;
+	s[3].material.dielectric_refl_idx = 1.5f;
+	s[4].sphere = sphere_init(vec3_init_3f(-1.0f, 0.0f, -1.0f), -0.45f);
+	s[4].material.scatter_callback = dielectric_scatter;
+	s[4].material.dielectric_refl_idx = 1.5f;
 	render_graph_t rgraph;
 	rgraph.spheres = s;
 	rgraph.sphere_count = NELEMS(s);

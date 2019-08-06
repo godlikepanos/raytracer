@@ -84,6 +84,18 @@ static inline vec3_t vec3_reflect(vec3_t v, vec3_t n) {
 	return v - 2.0f * vec3_dot(v, n) * n;
 }
 
+static inline bool_t vec3_refract(vec3_t v, vec3_t n, f32_t ni_over_nt, vec3_t *refracted) {
+	const vec3_t unit_v = vec3_normalize(v);
+	const f32_t dt = vec3_dot(unit_v, n);
+	const f32_t discriminant = 1.0f - ni_over_nt * ni_over_nt * (1.0f - dt * dt);
+	if(discriminant > 0.0f) {
+		*refracted = ni_over_nt * (unit_v - n * dt) - n * sqrtf(discriminant);
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
+
 // vec4_t
 static inline vec4_t vec4_init_f(f32_t f) {
 	const vec4_t v = {f, f, f, f};
@@ -138,7 +150,7 @@ bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f3
 bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 
 // Other
-static inline vec3_t random_in_init_sphere() {
+static inline vec3_t random_in_unit_sphere() {
 	vec3_t out;
 	do {
 		out = vec3_init_3f(rand_0f_to_1f(), rand_0f_to_1f(), rand_0f_to_1f());

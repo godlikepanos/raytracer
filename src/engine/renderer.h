@@ -1,3 +1,4 @@
 #pragma once
 
-#include <engine/renderer/render_graph.h>
+#include <engine/renderer/types.h>
+#include <engine/renderer/rendering_functions.h>
