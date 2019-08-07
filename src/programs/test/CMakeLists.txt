@@ -3,5 +3,5 @@ file(GLOB_RECURSE SOURCES *.c)
 add_executable(rt_test ${SOURCES})
 include_directories(../..)
 
-target_link_libraries(rt_test rt)
+target_link_libraries(rt_test rt pthread)
 install_executable(rt_test)

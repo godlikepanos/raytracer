@@ -4,6 +4,17 @@
 #include <stdlib.h>
 #include <time.h>
 
+// Mersenne Twister
+void seed_mt(u32_t seed);
+
+// Mersenne Twister
+u32_t rand_mt(void);
+
 static inline f32_t rand_0f_to_1f() {
-	return (f32_t)rand() / RAND_MAX;
+	const f32_t out = (f32_t)rand_mt() / 0xFFFFFFFF;
+	// const f32_t out = (f32_t)rand() / RAND_MAX;
+	return out;
 }
+
+#define MIN(x_, y_) ((x_) < (y_) ? (x_) : (y_))
+#define MAX(x_, y_) ((x_) > (y_) ? (x_) : (y_))

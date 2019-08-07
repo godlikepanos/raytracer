@@ -141,7 +141,9 @@ static inline f32_t plane_point_distance(const plane_t *plane, vec3_t point) {
 
 // Ray
 static inline ray_t ray_init(vec3_t point, vec3_t normal) {
-	assert(vec3_length(normal) <= 1.0f + EPSILON);
+	const f32_t normal_len = vec3_length(normal);
+	assert(normal_len <= 1.001f);
+	(void)normal_len;
 	const ray_t out = {point, normal};
 	return out;
 }
