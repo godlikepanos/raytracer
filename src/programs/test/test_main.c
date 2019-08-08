@@ -184,6 +184,7 @@ int main(int argc, char **argv) {
 	(void)argv;
 
 	seed_mt(time(NULL));
+	srand(time(NULL));
 
 	const u32_t width = 1920;
 	const u32_t height = 1080;
