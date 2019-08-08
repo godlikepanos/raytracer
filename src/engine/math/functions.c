@@ -56,99 +56,129 @@ vec4_t mat4_mul_vec4(const mat4_t *m, vec4_t v) {
 }
 
 mat4_t mat4_invert(const mat4_t *mat) {
-	f32_t t[6];
-	f32_t a = mat->m[0][0], b = mat->m[0][1], c = mat->m[0][2], d = mat->m[0][3], e = mat->m[1][0], f = mat->m[1][1],
-	      g = mat->m[1][2], h = mat->m[1][3], i = mat->m[2][0], j = mat->m[2][1], k = mat->m[2][2], l = mat->m[2][3],
-	      m = mat->m[3][0], n = mat->m[3][1], o = mat->m[3][2], p = mat->m[3][3];
+	f32_t tmp[12];
+	mat4_t m4;
 
-	t[0] = k * p - o * l;
-	t[1] = j * p - n * l;
-	t[2] = j * o - n * k;
-	t[3] = i * p - m * l;
-	t[4] = i * o - m * k;
-	t[5] = i * n - m * j;
+	tmp[0] = mat->m[2][2] * mat->m[3][3];
+	tmp[1] = mat->m[3][2] * mat->m[2][3];
+	tmp[2] = mat->m[1][2] * mat->m[3][3];
+	tmp[3] = mat->m[3][2] * mat->m[1][3];
+	tmp[4] = mat->m[1][2] * mat->m[2][3];
+	tmp[5] = mat->m[2][2] * mat->m[1][3];
+	tmp[6] = mat->m[0][2] * mat->m[3][3];
+	tmp[7] = mat->m[3][2] * mat->m[0][3];
+	tmp[8] = mat->m[0][2] * mat->m[2][3];
+	tmp[9] = mat->m[2][2] * mat->m[0][3];
+	tmp[10] = mat->m[0][2] * mat->m[1][3];
+	tmp[11] = mat->m[1][2] * mat->m[0][3];
 
-	mat4_t dest;
-	dest.m[0][0] = f * t[0] - g * t[1] + h * t[2];
-	dest.m[1][0] = -(e * t[0] - g * t[3] + h * t[4]);
-	dest.m[2][0] = e * t[1] - f * t[3] + h * t[5];
-	dest.m[3][0] = -(e * t[2] - f * t[4] + g * t[5]);
+	m4.m[0][0] = tmp[0] * mat->m[1][1] + tmp[3] * mat->m[2][1] + tmp[4] * mat->m[3][1];
+	m4.m[0][0] -= tmp[1] * mat->m[1][1] + tmp[2] * mat->m[2][1] + tmp[5] * mat->m[3][1];
+	m4.m[0][1] = tmp[1] * mat->m[0][1] + tmp[6] * mat->m[2][1] + tmp[9] * mat->m[3][1];
+	m4.m[0][1] -= tmp[0] * mat->m[0][1] + tmp[7] * mat->m[2][1] + tmp[8] * mat->m[3][1];
+	m4.m[0][2] = tmp[2] * mat->m[0][1] + tmp[7] * mat->m[1][1] + tmp[10] * mat->m[3][1];
+	m4.m[0][2] -= tmp[3] * mat->m[0][1] + tmp[6] * mat->m[1][1] + tmp[11] * mat->m[3][1];
+	m4.m[0][3] = tmp[5] * mat->m[0][1] + tmp[8] * mat->m[1][1] + tmp[11] * mat->m[2][1];
+	m4.m[0][3] -= tmp[4] * mat->m[0][1] + tmp[9] * mat->m[1][1] + tmp[10] * mat->m[2][1];
+	m4.m[1][0] = tmp[1] * mat->m[1][0] + tmp[2] * mat->m[2][0] + tmp[5] * mat->m[3][0];
+	m4.m[1][0] -= tmp[0] * mat->m[1][0] + tmp[3] * mat->m[2][0] + tmp[4] * mat->m[3][0];
+	m4.m[1][1] = tmp[0] * mat->m[0][0] + tmp[7] * mat->m[2][0] + tmp[8] * mat->m[3][0];
+	m4.m[1][1] -= tmp[1] * mat->m[0][0] + tmp[6] * mat->m[2][0] + tmp[9] * mat->m[3][0];
+	m4.m[1][2] = tmp[3] * mat->m[0][0] + tmp[6] * mat->m[1][0] + tmp[11] * mat->m[3][0];
+	m4.m[1][2] -= tmp[2] * mat->m[0][0] + tmp[7] * mat->m[1][0] + tmp[10] * mat->m[3][0];
+	m4.m[1][3] = tmp[4] * mat->m[0][0] + tmp[9] * mat->m[1][0] + tmp[10] * mat->m[2][0];
+	m4.m[1][3] -= tmp[5] * mat->m[0][0] + tmp[8] * mat->m[1][0] + tmp[11] * mat->m[2][0];
 
-	dest.m[0][1] = -(b * t[0] - c * t[1] + d * t[2]);
-	dest.m[1][1] = a * t[0] - c * t[3] + d * t[4];
-	dest.m[2][1] = -(a * t[1] - b * t[3] + d * t[5]);
-	dest.m[3][1] = a * t[2] - b * t[4] + c * t[5];
+	tmp[0] = mat->m[2][0] * mat->m[3][1];
+	tmp[1] = mat->m[3][0] * mat->m[2][1];
+	tmp[2] = mat->m[1][0] * mat->m[3][1];
+	tmp[3] = mat->m[3][0] * mat->m[1][1];
+	tmp[4] = mat->m[1][0] * mat->m[2][1];
+	tmp[5] = mat->m[2][0] * mat->m[1][1];
+	tmp[6] = mat->m[0][0] * mat->m[3][1];
+	tmp[7] = mat->m[3][0] * mat->m[0][1];
+	tmp[8] = mat->m[0][0] * mat->m[2][1];
+	tmp[9] = mat->m[2][0] * mat->m[0][1];
+	tmp[10] = mat->m[0][0] * mat->m[1][1];
+	tmp[11] = mat->m[1][0] * mat->m[0][1];
 
-	t[0] = g * p - o * h;
-	t[1] = f * p - n * h;
-	t[2] = f * o - n * g;
-	t[3] = e * p - m * h;
-	t[4] = e * o - m * g;
-	t[5] = e * n - m * f;
+	m4.m[2][0] = tmp[0] * mat->m[1][3] + tmp[3] * mat->m[2][3] + tmp[4] * mat->m[3][3];
+	m4.m[2][0] -= tmp[1] * mat->m[1][3] + tmp[2] * mat->m[2][3] + tmp[5] * mat->m[3][3];
+	m4.m[2][1] = tmp[1] * mat->m[0][3] + tmp[6] * mat->m[2][3] + tmp[9] * mat->m[3][3];
+	m4.m[2][1] -= tmp[0] * mat->m[0][3] + tmp[7] * mat->m[2][3] + tmp[8] * mat->m[3][3];
+	m4.m[2][2] = tmp[2] * mat->m[0][3] + tmp[7] * mat->m[1][3] + tmp[10] * mat->m[3][3];
+	m4.m[2][2] -= tmp[3] * mat->m[0][3] + tmp[6] * mat->m[1][3] + tmp[11] * mat->m[3][3];
+	m4.m[2][3] = tmp[5] * mat->m[0][3] + tmp[8] * mat->m[1][3] + tmp[11] * mat->m[2][3];
+	m4.m[2][3] -= tmp[4] * mat->m[0][3] + tmp[9] * mat->m[1][3] + tmp[10] * mat->m[2][3];
+	m4.m[3][0] = tmp[2] * mat->m[2][2] + tmp[5] * mat->m[3][2] + tmp[1] * mat->m[1][2];
+	m4.m[3][0] -= tmp[4] * mat->m[3][2] + tmp[0] * mat->m[1][2] + tmp[3] * mat->m[2][2];
+	m4.m[3][1] = tmp[8] * mat->m[3][2] + tmp[0] * mat->m[0][2] + tmp[7] * mat->m[2][2];
+	m4.m[3][1] -= tmp[6] * mat->m[2][2] + tmp[9] * mat->m[3][2] + tmp[1] * mat->m[0][2];
+	m4.m[3][2] = tmp[6] * mat->m[1][2] + tmp[11] * mat->m[3][2] + tmp[3] * mat->m[0][2];
+	m4.m[3][2] -= tmp[10] * mat->m[3][2] + tmp[2] * mat->m[0][2] + tmp[7] * mat->m[1][2];
+	m4.m[3][3] = tmp[10] * mat->m[2][2] + tmp[4] * mat->m[0][2] + tmp[9] * mat->m[1][2];
+	m4.m[3][3] -= tmp[8] * mat->m[1][2] + tmp[11] * mat->m[2][2] + tmp[5] * mat->m[0][2];
 
-	dest.m[0][2] = b * t[0] - c * t[1] + d * t[2];
-	dest.m[1][2] = -(a * t[0] - c * t[3] + d * t[4]);
-	dest.m[2][2] = a * t[1] - b * t[3] + d * t[5];
-	dest.m[3][2] = -(a * t[2] - b * t[4] + c * t[5]);
-
-	t[0] = g * l - k * h;
-	t[1] = f * l - j * h;
-	t[2] = f * k - j * g;
-	t[3] = e * l - i * h;
-	t[4] = e * k - i * g;
-	t[5] = e * j - i * f;
-
-	dest.m[0][3] = -(b * t[0] - c * t[1] + d * t[2]);
-	dest.m[1][3] = a * t[0] - c * t[3] + d * t[4];
-	dest.m[2][3] = -(a * t[1] - b * t[3] + d * t[5]);
-	dest.m[3][3] = a * t[2] - b * t[4] + c * t[5];
-
-	const f32_t det = 1.0f / (a * dest.m[0][0] + b * dest.m[1][0] + c * dest.m[2][0] + d * dest.m[3][0]);
-
-	dest.m[0] *= vec4_init_f(det);
-	dest.m[1] *= vec4_init_f(det);
-	dest.m[2] *= vec4_init_f(det);
-	dest.m[3] *= vec4_init_f(det);
-
-	return dest;
+	f32_t det =
+	    mat->m[0][0] * m4.m[0][0] + mat->m[1][0] * m4.m[0][1] + mat->m[2][0] * m4.m[0][2] + mat->m[3][0] * m4.m[0][3];
+	det = 1.0 / det;
+	m4.m[0] *= det;
+	m4.m[1] *= det;
+	m4.m[2] *= det;
+	m4.m[3] *= det;
+	return m4;
 }
 
 mat4_t look_at(vec3_t eye, vec3_t center, vec3_t up) {
-	const vec3_t f = vec3_normalize(center - eye);
-	const vec3_t s = vec3_normalize(vec3_cross(f, up));
-	const vec3_t u = vec3_cross(s, f);
+	const vec3_t vdir = vec3_normalize(center - eye);
+	const vec3_t vside = vec3_normalize(vec3_cross(vdir, up));
+	const vec3_t vup = vec3_normalize(vec3_cross(vside, vdir));
+	const vec3_t x = vside;
+	const vec3_t y = vup;
+	const vec3_t z = -vdir;
 
 	mat4_t dest;
-	dest.m[0][0] = s.x;
-	dest.m[0][1] = u.x;
-	dest.m[0][2] = -f.x;
-	dest.m[1][0] = s.y;
-	dest.m[1][1] = u.y;
-	dest.m[1][2] = -f.y;
-	dest.m[2][0] = s.z;
-	dest.m[2][1] = u.z;
-	dest.m[2][2] = -f.z;
-	dest.m[3][0] = -vec3_dot(s, eye);
-	dest.m[3][1] = -vec3_dot(u, eye);
-	dest.m[3][2] = vec3_dot(f, eye);
-	dest.m[0][3] = 0.0f;
-	dest.m[1][3] = 0.0f;
-	dest.m[2][3] = 0.0f;
+	dest.m[0][0] = x.x;
+	dest.m[0][1] = y.x;
+	dest.m[0][2] = z.x;
+	dest.m[0][3] = eye.x;
+	dest.m[1][0] = x.y;
+	dest.m[1][1] = y.y;
+	dest.m[1][2] = z.y;
+	dest.m[1][3] = eye.y;
+	dest.m[2][0] = x.z;
+	dest.m[2][1] = y.z;
+	dest.m[2][2] = z.z;
+	dest.m[2][3] = eye.z;
+	dest.m[3][0] = 0.0f;
+	dest.m[3][1] = 0.0f;
+	dest.m[3][2] = 0.0f;
 	dest.m[3][3] = 1.0f;
 
-	return dest;
+	return mat4_invert(&dest);
 }
 
 mat4_t perspective(f32_t fovy, f32_t aspect, f32_t near, f32_t far) {
-	const f32_t f = 1.0f / tanf(fovy * 0.5f);
-	const f32_t fn = 1.0f / (near - far);
+	const f32_t g = near - far;
+	const f32_t f = 1.0f / tanf(fovy / 2.0f);
 
-	mat4_t dest = mat4_init_f(0.0f);
+	mat4_t dest;
 	dest.m[0][0] = f / aspect;
+	dest.m[0][1] = 0.0f;
+	dest.m[0][2] = 0.0f;
+	dest.m[0][3] = 0.0f;
+	dest.m[1][0] = 0.0f;
 	dest.m[1][1] = f;
-	dest.m[2][2] = (near + far) * fn;
-	dest.m[2][3] = -1.0f;
-	dest.m[3][2] = 2.0f * near * far * fn;
+	dest.m[1][2] = 0.0f;
+	dest.m[1][3] = 0.0f;
+	dest.m[2][0] = 0.0f;
+	dest.m[2][1] = 0.0f;
+	dest.m[2][2] = far / g;
+	dest.m[2][3] = (far * near) / g;
+	dest.m[3][0] = 0.0f;
+	dest.m[3][1] = 0.0f;
+	dest.m[3][2] = -1.0f;
+	dest.m[3][3] = 0.0f;
 
 	return dest;
 }

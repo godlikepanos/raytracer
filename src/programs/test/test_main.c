@@ -148,8 +148,10 @@ void *run_thread(void *user_data) {
 				for(u32_t s = 0; s < 8; ++s) {
 					const vec2_t s_ndc = ndc + ctx->subsamples[s];
 
-					const vec3_t view_dir =
-					    mat4_mul_vec4(&ctx->invert_vp_matrix, vec4_init_4f(s_ndc.x, s_ndc.y, 1.0f, 1.0f)).xyz;
+					const vec4_t view_dir4 =
+					    mat4_mul_vec4(&ctx->invert_vp_matrix, vec4_init_4f(s_ndc.x, s_ndc.y, 1.0f, 1.0f));
+					const vec3_t view_dir = view_dir4.xyz / view_dir4.w;
+
 					mat3_t cam_rot = mat3_init_mat4(&ctx->camera_transform);
 					const ray_t primary_ray =
 					    ray_init(ctx->camera_position, vec3_normalize(mat3_mul_vec3(&cam_rot, view_dir)));
@@ -183,8 +185,8 @@ int main(int argc, char **argv) {
 
 	seed_mt(time(NULL));
 
-	const u32_t width = 1024;
-	const u32_t height = 768;
+	const u32_t width = 1920;
+	const u32_t height = 1080;
 
 	run_context_t ctx;
 	memset(&ctx, 0, sizeof(ctx));
@@ -193,12 +195,12 @@ int main(int argc, char **argv) {
 	ctx.height = height;
 	init_subsamples(width, height, ctx.subsamples);
 
-	const vec3_t cam_pos = vec3_init_3f(0.0f, 1.0f, 15.0f);
-	const vec3_t eye = vec3_init_3f(0.0f, -0.3f, -1.0f);
+	const vec3_t cam_pos = vec3_init_3f(0.0f, 1.1f, 6.0f);
+	const vec3_t ref_point = cam_pos + vec3_init_3f(0.0f, -0.1f, -1.0f);
 	const vec3_t up = vec3_init_3f(0.0f, 1.0f, 0.0f);
-	const mat4_t view_mat = look_at(eye, cam_pos, up);
+	const mat4_t view_mat = look_at(cam_pos, ref_point, up);
 	const mat4_t cam_trf = mat4_invert(&view_mat);
-	const mat4_t proj_mat = perspective(to_rad(100.0f), (f32_t)width / (f32_t)height, 0.1f, 1000.0f);
+	const mat4_t proj_mat = perspective(to_rad(70.0f), (f32_t)width / (f32_t)height, 0.1f, 1000.0f);
 	const mat4_t vp_mat = mat4_mul_mat4(&proj_mat, &view_mat);
 	const mat4_t inv_vp_mat = mat4_invert(&vp_mat);
 
@@ -226,9 +228,8 @@ int main(int argc, char **argv) {
 	s[4].sphere = sphere_init(vec3_init_3f(-1.0f, 0.0f, -1.0f), -0.45f);
 	s[4].material.scatter_callback = dielectric_scatter;
 	s[4].material.dielectric_refl_idx = 1.5f;
-	render_graph_t rgraph;
-	rgraph.spheres = s;
-	rgraph.sphere_count = NELEMS(s);
+	ctx.render_graph.spheres = s;
+	ctx.render_graph.sphere_count = NELEMS(s);
 #else
 	ctx.render_graph = random_scene();
 #endif
