@@ -16,6 +16,7 @@ typedef struct material_t {
 
 typedef struct renderable_sphere_t {
 	sphere_t sphere;
+	vec3_t previous_sphere_center;
 	material_t material;
 } renderable_sphere_t;
 

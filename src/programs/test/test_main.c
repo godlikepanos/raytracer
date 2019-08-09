@@ -23,7 +23,13 @@ bool_t closest_hit(const render_graph_t *rgraph, const ray_t *ray, ray_hit_t *cl
 
 	for(u32_t i = 0; i < rgraph->sphere_count; ++i) {
 		ray_hit_t hit;
-		if(ray_cast_sphere(ray, &rgraph->spheres[i].sphere, 0.001f, 1000.f, &hit)) {
+		const sphere_t *old_sphere = &rgraph->spheres[i].sphere;
+		sphere_t new_sphere = *old_sphere;
+		if(!vec3_eq(old_sphere->center, rgraph->spheres[i].previous_sphere_center)) {
+			new_sphere.center =
+			    vec3_mix(old_sphere->center, rgraph->spheres[i].previous_sphere_center, rand_0f_to_1f());
+		}
+		if(ray_cast_sphere(ray, &new_sphere, 0.001f, 1000.f, &hit)) {
 			if(hit.t < closest_hit->t) {
 				*closest_hit = hit;
 				*hit_mtl = &rgraph->spheres[i].material;
@@ -62,16 +68,22 @@ render_graph_t random_scene() {
 	const u32_t n = 500;
 	renderable_sphere_t *spheres = (renderable_sphere_t *)malloc(sizeof(renderable_sphere_t) * (n + 1));
 	spheres[0].sphere = sphere_init(vec3_init_3f(0.0f, -1000.0f, 0.0f), 1000.0f);
+	spheres[0].previous_sphere_center = spheres[0].sphere.center;
 	spheres[0].material.albedo = vec3_init_f(0.5f);
 	spheres[0].material.scatter_callback = lambertian_scatter;
 	u32_t i = 1;
 	for(i32_t a = -11; a < 11; a++) {
 		for(i32_t b = -11; b < 11; b++) {
-			f32_t choose_mat = rand_0f_to_1f();
-			vec3_t center = vec3_init_3f(a + 0.9f * rand_0f_to_1f(), 0.2f, b + 0.9f * rand_0f_to_1f());
+			const f32_t choose_mat = rand_0f_to_1f();
+			const vec3_t center = vec3_init_3f(a + 0.9f * rand_0f_to_1f(), 0.2f, b + 0.9f * rand_0f_to_1f());
 			if(vec3_length(center - vec3_init_3f(4.0f, 0.2f, 0.0f)) > 0.9f) {
 				renderable_sphere_t *sphere = &spheres[i++];
 				sphere->sphere = sphere_init(center, 0.2f);
+
+				const vec3_t rand_dir = random_in_unit_sphere();
+				const f32_t rand_disp = rand_0f_to_1f() * 0.3f;
+				sphere->previous_sphere_center = center + rand_dir * rand_disp;
+
 				if(choose_mat < 0.8f) {
 					sphere->material.albedo =
 					    vec3_init_3f(rand_0f_to_1f() * rand_0f_to_1f(), rand_0f_to_1f() * rand_0f_to_1f(),
@@ -93,16 +105,19 @@ render_graph_t random_scene() {
 
 	renderable_sphere_t *sphere = &spheres[i++];
 	sphere->sphere = sphere_init(vec3_init_3f(0.0f, 1.0f, 0.0f), 1.0f);
+	sphere->previous_sphere_center = sphere->sphere.center;
 	sphere->material.dielectric_refl_idx = 1.5f;
 	sphere->material.scatter_callback = dielectric_scatter;
 
 	sphere = &spheres[i++];
 	sphere->sphere = sphere_init(vec3_init_3f(-4.0f, 1.0f, 0.0f), 1.0f);
+	sphere->previous_sphere_center = sphere->sphere.center;
 	sphere->material.albedo = vec3_init_3f(0.4f, 0.2f, 0.1f);
 	sphere->material.scatter_callback = lambertian_scatter;
 
 	sphere = &spheres[i++];
 	sphere->sphere = sphere_init(vec3_init_3f(4.0f, 1.0f, 0.0f), 1.0f);
+	sphere->previous_sphere_center = sphere->sphere.center;
 	sphere->material.albedo = vec3_init_3f(0.7f, 0.6f, 0.5f);
 	sphere->material.scatter_callback = metal_scatter;
 	sphere->material.metal_fuzz = 0.0f;

@@ -46,6 +46,10 @@ static inline vec3_t vec3_init_3f(f32_t x, f32_t y, f32_t z) {
 	return v;
 }
 
+static inline bool_t vec3_eq(vec3_t a, vec3_t b) {
+	return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
 static inline f32_t vec3_dot(vec3_t a, vec3_t b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
