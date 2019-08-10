@@ -2,12 +2,12 @@
 #include <engine/rt.h>
 #include <pthread.h>
 
-void init_subsamples(u32_t width, u32_t height, vec2_t *subsamples) {
-	vec2_t SAMPLE_LOCS_8[8] = {vec2_init_2f(-7.0, 1.0), vec2_init_2f(-5.0, -5.0), vec2_init_2f(-1.0, -3.0),
-	                           vec2_init_2f(3.0, -7.0), vec2_init_2f(5.0, -1.0),  vec2_init_2f(7.0, 7.0),
-	                           vec2_init_2f(1.0, 3.0),  vec2_init_2f(-3.0, 5.0)};
+static void init_subsamples_8(u32_t width, u32_t height, vec2_t *subsamples) {
+	const vec2_t SAMPLE_LOCS_8[8] = {vec2_init_2f(-7.0, 1.0), vec2_init_2f(-5.0, -5.0), vec2_init_2f(-1.0, -3.0),
+	                                 vec2_init_2f(3.0, -7.0), vec2_init_2f(5.0, -1.0),  vec2_init_2f(7.0, 7.0),
+	                                 vec2_init_2f(1.0, 3.0),  vec2_init_2f(-3.0, 5.0)};
 
-	vec2_t tex_size = 1.0f / vec2_init_2f(width, height); // Texel size
+	const vec2_t tex_size = 1.0f / vec2_init_2f(width, height); // Texel size
 
 	for(u32_t i = 0; i < 8; ++i) {
 		const vec2_t s = SAMPLE_LOCS_8[i] / 8.0f; // In [-1, 1]
@@ -17,17 +17,27 @@ void init_subsamples(u32_t width, u32_t height, vec2_t *subsamples) {
 	}
 }
 
-bool_t closest_hit(const render_graph_t *rgraph, const ray_t *ray, ray_hit_t *closest_hit, const material_t **hit_mtl) {
+static void init_subsamples_n(u32_t width, u32_t height, vec2_t *subsamples, u32_t subsample_count) {
+	const vec2_t tex_size = 1.0f / vec2_init_2f(width, height); // Texel size
+
+	for(u32_t i = 0; i < subsample_count; ++i) {
+		const vec2_t s = rand_0f_to_1f() * 2.0f - 1.0f; // In [-1, 1]
+		vec2_t sub_sample = s * tex_size;               // In [-tex_size, tex_size]
+		subsamples[i] = sub_sample;
+	}
+}
+
+static bool_t closest_hit(const render_queue_t *rgraph, const ray_t *ray, ray_hit_t *closest_hit,
+                          const material_t **hit_mtl) {
 	closest_hit->t = INFINITY;
 	bool_t has_hit = FALSE;
 
 	for(u32_t i = 0; i < rgraph->sphere_count; ++i) {
 		ray_hit_t hit;
-		const sphere_t *old_sphere = &rgraph->spheres[i].sphere;
+		const sphere_t *old_sphere = &rgraph->spheres[i].shape.sphere;
 		sphere_t new_sphere = *old_sphere;
-		if(!vec3_eq(old_sphere->center, rgraph->spheres[i].previous_sphere_center)) {
-			new_sphere.center =
-			    vec3_mix(old_sphere->center, rgraph->spheres[i].previous_sphere_center, rand_0f_to_1f());
+		if(!vec3_eq(old_sphere->center, rgraph->spheres[i].previous_position)) {
+			new_sphere.center = vec3_mix(old_sphere->center, rgraph->spheres[i].previous_position, rand_0f_to_1f());
 		}
 		if(ray_cast_sphere(ray, &new_sphere, 0.001f, 1000.f, &hit)) {
 			if(hit.t < closest_hit->t) {
@@ -41,7 +51,7 @@ bool_t closest_hit(const render_graph_t *rgraph, const ray_t *ray, ray_hit_t *cl
 	return has_hit;
 }
 
-vec3_t trace(const render_graph_t *rgraph, const ray_t *ray, u32_t depth) {
+static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth) {
 	ray_hit_t hit;
 	const material_t *hit_mtl;
 	vec3_t color = {0};
@@ -64,66 +74,66 @@ vec3_t trace(const render_graph_t *rgraph, const ray_t *ray, u32_t depth) {
 	return color;
 }
 
-render_graph_t random_scene() {
+static render_queue_t random_scene() {
 	const u32_t n = 500;
-	renderable_sphere_t *spheres = (renderable_sphere_t *)malloc(sizeof(renderable_sphere_t) * (n + 1));
-	spheres[0].sphere = sphere_init(vec3_init_3f(0.0f, -1000.0f, 0.0f), 1000.0f);
-	spheres[0].previous_sphere_center = spheres[0].sphere.center;
-	spheres[0].material.albedo = vec3_init_f(0.5f);
-	spheres[0].material.scatter_callback = lambertian_scatter;
+	renderable_t *spheres = (renderable_t *)malloc(sizeof(renderable_t) * (n + 1));
+	spheres[0].shape.sphere = sphere_init(vec3_init_3f(0.0f, -1000.0f, 0.0f), 1000.0f);
+	spheres[0].previous_position = spheres[0].shape.sphere.center;
+	spheres[0].material = material_init_lambertian();
+	spheres[0].material.albedo_texture = texture_init_checker(vec3_init_3f(0.2f, 0.3f, 0.1f), vec3_init_f(0.9f));
 	u32_t i = 1;
 	for(i32_t a = -11; a < 11; a++) {
 		for(i32_t b = -11; b < 11; b++) {
 			const f32_t choose_mat = rand_0f_to_1f();
 			const vec3_t center = vec3_init_3f(a + 0.9f * rand_0f_to_1f(), 0.2f, b + 0.9f * rand_0f_to_1f());
 			if(vec3_length(center - vec3_init_3f(4.0f, 0.2f, 0.0f)) > 0.9f) {
-				renderable_sphere_t *sphere = &spheres[i++];
-				sphere->sphere = sphere_init(center, 0.2f);
+				renderable_t *sphere = &spheres[i++];
+				sphere->shape.sphere = sphere_init(center, 0.2f);
 
 				const vec3_t rand_dir = random_in_unit_sphere();
 				const f32_t rand_disp = rand_0f_to_1f() * 0.3f;
-				sphere->previous_sphere_center = center + rand_dir * rand_disp;
+				sphere->previous_position = center + rand_dir * rand_disp;
 
 				if(choose_mat < 0.8f) {
-					sphere->material.albedo =
+					sphere->material = material_init_lambertian();
+					sphere->material.albedo_texture = texture_init_constant(
 					    vec3_init_3f(rand_0f_to_1f() * rand_0f_to_1f(), rand_0f_to_1f() * rand_0f_to_1f(),
-					                 rand_0f_to_1f() * rand_0f_to_1f());
-					sphere->material.scatter_callback = lambertian_scatter;
+					                 rand_0f_to_1f() * rand_0f_to_1f()));
 				} else if(choose_mat < 0.95f) {
-					sphere->material.albedo =
+					sphere->material = material_init_metal();
+					sphere->material.albedo_texture = texture_init_constant(
 					    vec3_init_3f(0.5f * (1.0f + rand_0f_to_1f()), 0.5f * (1.0f + rand_0f_to_1f()),
-					                 0.5f * (1.0f + rand_0f_to_1f()));
-					sphere->material.metal_fuzz = 0.5f * rand_0f_to_1f();
-					sphere->material.scatter_callback = metal_scatter;
+					                 0.5f * (1.0f + rand_0f_to_1f())));
+					sphere->material.metal_fuzz_texture = texture_init_constant(vec3_init_f(0.5f * rand_0f_to_1f()));
 				} else {
-					sphere->material.dielectric_refl_idx = 1.5f;
-					sphere->material.scatter_callback = dielectric_scatter;
+					sphere->material = material_init_dielectric();
+					sphere->material.dielectric_reflection_index = texture_init_constant(vec3_init_f(1.5f));
 				}
 			}
 		}
 	}
 
-	renderable_sphere_t *sphere = &spheres[i++];
-	sphere->sphere = sphere_init(vec3_init_3f(0.0f, 1.0f, 0.0f), 1.0f);
-	sphere->previous_sphere_center = sphere->sphere.center;
-	sphere->material.dielectric_refl_idx = 1.5f;
-	sphere->material.scatter_callback = dielectric_scatter;
+	renderable_t *sphere = &spheres[i++];
+	sphere->shape.sphere = sphere_init(vec3_init_3f(0.0f, 1.0f, 0.0f), 1.0f);
+	sphere->previous_position = sphere->shape.sphere.center;
+	sphere->material = material_init_dielectric();
+	sphere->material.dielectric_reflection_index = texture_init_constant(vec3_init_f(1.5f));
 
 	sphere = &spheres[i++];
-	sphere->sphere = sphere_init(vec3_init_3f(-4.0f, 1.0f, 0.0f), 1.0f);
-	sphere->previous_sphere_center = sphere->sphere.center;
-	sphere->material.albedo = vec3_init_3f(0.4f, 0.2f, 0.1f);
-	sphere->material.scatter_callback = lambertian_scatter;
+	sphere->shape.sphere = sphere_init(vec3_init_3f(-4.0f, 1.0f, 0.0f), 1.0f);
+	sphere->previous_position = sphere->shape.sphere.center;
+	sphere->material = material_init_lambertian();
+	sphere->material.albedo_texture = texture_init_constant(vec3_init_3f(0.4f, 0.2f, 0.1f));
 
 	sphere = &spheres[i++];
-	sphere->sphere = sphere_init(vec3_init_3f(4.0f, 1.0f, 0.0f), 1.0f);
-	sphere->previous_sphere_center = sphere->sphere.center;
-	sphere->material.albedo = vec3_init_3f(0.7f, 0.6f, 0.5f);
-	sphere->material.scatter_callback = metal_scatter;
-	sphere->material.metal_fuzz = 0.0f;
+	sphere->shape.sphere = sphere_init(vec3_init_3f(4.0f, 1.0f, 0.0f), 1.0f);
+	sphere->previous_position = sphere->shape.sphere.center;
+	sphere->material = material_init_metal();
+	sphere->material.albedo_texture = texture_init_constant(vec3_init_3f(0.7f, 0.6f, 0.5f));
+	sphere->material.metal_fuzz_texture = texture_init_constant(vec3_init_f(0.0f));
 	assert(i <= n + 1);
 
-	render_graph_t rgraph;
+	render_queue_t rgraph;
 	rgraph.sphere_count = i;
 	rgraph.spheres = spheres;
 	return rgraph;
@@ -133,16 +143,17 @@ typedef struct run_context_t {
 	u32_t tile_size;
 	u32_t width;
 	u32_t height;
-	vec2_t subsamples[8];
+	vec2_t *subsamples;
+	u32_t subsample_count;
 	mat4_t camera_transform;
 	mat4_t invert_vp_matrix;
 	vec3_t camera_position;
-	render_graph_t render_graph;
+	render_queue_t render_graph;
 	u8_t *pixel_buffer;
 	u32_t last_tile;
 } run_context_t;
 
-void *run_thread(void *user_data) {
+static void *run_thread(void *user_data) {
 	run_context_t *ctx = (run_context_t *)user_data;
 
 	const u32_t tile_count_x = (ctx->width + ctx->tile_size - 1) / ctx->tile_size;
@@ -160,7 +171,7 @@ void *run_thread(void *user_data) {
 
 				vec3_t color = vec3_init_f(0.0f);
 
-				for(u32_t s = 0; s < 8; ++s) {
+				for(u32_t s = 0; s < ctx->subsample_count; ++s) {
 					const vec2_t s_ndc = ndc + ctx->subsamples[s];
 
 					const vec4_t view_dir4 =
@@ -174,7 +185,7 @@ void *run_thread(void *user_data) {
 					color += trace(&ctx->render_graph, &primary_ray, 0);
 				}
 
-				color /= vec3_init_f(NELEMS(ctx->subsamples));
+				color /= (f32_t)ctx->subsample_count;
 
 				// Write
 				const f32_t gamma = 2.2f;
@@ -203,13 +214,21 @@ int main(int argc, char **argv) {
 
 	const u32_t width = 1920;
 	const u32_t height = 1080;
+	const u32_t subsample_count = 8;
 
 	run_context_t ctx;
 	memset(&ctx, 0, sizeof(ctx));
 	ctx.tile_size = 64;
 	ctx.width = width;
 	ctx.height = height;
-	init_subsamples(width, height, ctx.subsamples);
+	vec2_t subsamples[subsample_count];
+	ctx.subsamples = subsamples;
+	ctx.subsample_count = subsample_count;
+	if(subsample_count == 8) {
+		init_subsamples_8(width, height, ctx.subsamples);
+	} else {
+		init_subsamples_n(width, height, ctx.subsamples, subsample_count);
+	}
 
 	const vec3_t cam_pos = vec3_init_3f(0.0f, 1.1f, 6.0f);
 	const vec3_t ref_point = cam_pos + vec3_init_3f(0.0f, -0.1f, -1.0f);
@@ -226,7 +245,7 @@ int main(int argc, char **argv) {
 
 	// Render graph
 #if 0
-	renderable_sphere_t s[5];
+	renderable_t s[5];
 	memset(s, 0, sizeof(s));
 	s[0].sphere = sphere_init(vec3_init_3f(0.0f, 0.0f, -1.0f), 0.5f);
 	s[0].material.scatter_callback = lambertian_scatter;
@@ -250,7 +269,7 @@ int main(int argc, char **argv) {
 	ctx.render_graph = random_scene();
 #endif
 
-	u8_t pixel_buffer[height * width * 3];
+	u8_t *pixel_buffer = malloc(height * width * 3);
 	ctx.pixel_buffer = pixel_buffer;
 
 	const u32_t thread_count = 32;

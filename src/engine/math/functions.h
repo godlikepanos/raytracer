@@ -50,6 +50,22 @@ static inline bool_t vec3_eq(vec3_t a, vec3_t b) {
 	return a.x == b.x && a.y == b.y && a.z == b.z;
 }
 
+static inline vec3_t vec3_min(vec3_t a, vec3_t b) {
+	vec3_t c;
+	c.x = MIN(a.x, b.x);
+	c.y = MIN(a.y, b.y);
+	c.z = MIN(a.z, b.z);
+	return c;
+}
+
+static inline vec3_t vec3_max(vec3_t a, vec3_t b) {
+	vec3_t c;
+	c.x = MAX(a.x, b.x);
+	c.y = MAX(a.y, b.y);
+	c.z = MAX(a.z, b.z);
+	return c;
+}
+
 static inline f32_t vec3_dot(vec3_t a, vec3_t b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
@@ -127,13 +143,20 @@ mat4_t mat4_invert(const mat4_t *mat);
 mat4_t look_at(vec3_t eye, vec3_t center, vec3_t up);
 mat4_t perspective(f32_t fovy, f32_t aspect, f32_t near, f32_t far);
 
-// Sphere
+// sphere_t
 static inline sphere_t sphere_init(vec3_t center, f32_t radius) {
 	const sphere_t s = {center, radius};
 	return s;
 }
 
-// Plane
+static inline aabb_t sphere_compute_aabb(const sphere_t *s) {
+	aabb_t box;
+	box.min = s->center - s->radius;
+	box.max = s->center + s->radius;
+	return box;
+}
+
+// plane_t
 static inline plane_t plane_init(vec3_t normal, f32_t offset) {
 	const plane_t p = {normal, offset};
 	return p;
@@ -143,7 +166,7 @@ static inline f32_t plane_point_distance(const plane_t *plane, vec3_t point) {
 	return vec3_dot(plane->normal, point) - plane->offset;
 }
 
-// Ray
+// ray_t
 static inline ray_t ray_init(vec3_t point, vec3_t normal) {
 	const f32_t normal_len = vec3_length(normal);
 	assert(normal_len <= 1.001f);
@@ -154,6 +177,21 @@ static inline ray_t ray_init(vec3_t point, vec3_t normal) {
 
 bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t t_max, ray_hit_t *hit);
+
+bool_t ray_intersects_aabb(const ray_t *ray, const aabb_t *box, f32_t tmin, f32_t tmax);
+
+// aabb_t
+static inline aabb_t aabb_init(vec3_t min, vec3_t max) {
+	const aabb_t box = {min, max};
+	return box;
+}
+
+static inline aabb_t aabb_union(const aabb_t *a, const aabb_t *b) {
+	aabb_t c;
+	c.min = vec3_min(a->min, b->min);
+	c.max = vec3_min(a->max, b->max);
+	return c;
+}
 
 // Other
 static inline vec3_t random_in_unit_sphere() {

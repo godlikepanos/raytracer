@@ -43,3 +43,8 @@ typedef struct plane_t {
 	vec3_t normal;
 	f32_t offset;
 } plane_t;
+
+typedef struct aabb_t {
+	vec3_t min;
+	vec3_t max;
+} aabb_t;

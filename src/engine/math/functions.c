@@ -220,3 +220,18 @@ bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t
 
 	return FALSE;
 }
+
+bool_t ray_intersects_aabb(const ray_t *ray, const aabb_t *box, f32_t tmin, f32_t tmax) {
+	for(u32_t a = 0; a < 3; ++a) {
+		const f32_t l = (box->min[a] - ray->origin[a]) / ray->direction[a];
+		const f32_t r = (box->max[a] - ray->origin[a]) / ray->direction[a];
+		const f32_t t0 = MIN(l, r);
+		const f32_t t1 = MAX(l, r);
+		tmin = MAX(t0, tmin);
+		tmax = MIN(t1, tmax);
+		if(tmax <= tmin) {
+			return FALSE;
+		}
+	}
+	return TRUE;
+}
