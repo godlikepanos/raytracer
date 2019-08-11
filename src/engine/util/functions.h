@@ -27,3 +27,5 @@ static inline f32_t rand_0f_to_1f() {
 
 #define MIN(x_, y_) ((x_) < (y_) ? (x_) : (y_))
 #define MAX(x_, y_) ((x_) > (y_) ? (x_) : (y_))
+
+#define CLAMP(x_, min_, max_) MAX(min_, MIN(x_, max_))

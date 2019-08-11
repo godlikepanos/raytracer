@@ -156,6 +156,15 @@ static inline aabb_t sphere_compute_aabb(const sphere_t *s) {
 	return box;
 }
 
+static inline vec2_t sphere_compute_uv(vec3_t point_in_sphere) {
+	const f32_t phi = atan2(point_in_sphere.z, point_in_sphere.x);
+	const f32_t theta = asin(point_in_sphere.y);
+	vec2_t uv;
+	uv.x = 1.0f - (phi + PI) / (2.0f * PI);
+	uv.y = (theta + PI / 2.0f) / PI;
+	return uv;
+}
+
 // plane_t
 static inline plane_t plane_init(vec3_t normal, f32_t offset) {
 	const plane_t p = {normal, offset};

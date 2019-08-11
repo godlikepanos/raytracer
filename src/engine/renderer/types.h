@@ -13,6 +13,9 @@ typedef vec3_t (*texture_callback_t)(const struct texture_t *tex, vec2_t uv, vec
 typedef struct texture_t {
 	vec3_t color0;
 	vec3_t color1;
+	u8_t *image_pixels;
+	u32_t image_width;
+	u32_t image_height;
 	texture_callback_t callback;
 } texture_t;
 

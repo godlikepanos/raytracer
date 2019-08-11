@@ -196,6 +196,7 @@ bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f3
 			hit->t = tmp;
 			hit->point = ray->origin + ray->direction * hit->t;
 			hit->normal = (hit->point - sphere->center) / sphere->radius;
+			hit->uv = sphere_compute_uv(hit->point - sphere->center);
 			return TRUE;
 		}
 	}
@@ -214,6 +215,7 @@ bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t
 			assert(hit->t > 0.0f);
 			hit->point = ray->origin + ray->direction * hit->t;
 			hit->normal = plane->normal;
+			hit->uv = vec2_init_f(0.0f); // TODO
 			return TRUE;
 		}
 	}

@@ -123,7 +123,7 @@ static render_queue_t random_scene() {
 	sphere->shape.sphere = sphere_init(vec3_init_3f(-4.0f, 1.0f, 0.0f), 1.0f);
 	sphere->previous_position = sphere->shape.sphere.center;
 	sphere->material = material_init_lambertian();
-	sphere->material.albedo_texture = texture_init_constant(vec3_init_3f(0.4f, 0.2f, 0.1f));
+	sphere->material.albedo_texture = texture_init_image("data/earth.jpg");
 
 	sphere = &spheres[i++];
 	sphere->shape.sphere = sphere_init(vec3_init_3f(4.0f, 1.0f, 0.0f), 1.0f);
@@ -291,7 +291,7 @@ int main(int argc, char **argv) {
 		pthread_join(threads[i], &out);
 	}
 
-	save_tga("./image.tga", pixel_buffer, sizeof(pixel_buffer), width, height);
+	save_tga("./image.tga", pixel_buffer, height * width * 3, width, height);
 
 	return 0;
 }

@@ -7,4 +7,5 @@ macro(install_executable exe)
 		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${exe}> ${CMAKE_BINARY_DIR}/bin)
 endmacro()
 
+include_directories(.)
 add_subdirectory(src)

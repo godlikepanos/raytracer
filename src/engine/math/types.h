@@ -32,6 +32,7 @@ typedef struct ray_hit_t {
 	vec3_t point;
 	vec3_t normal;
 	f32_t t;
+	vec2_t uv;
 } ray_hit_t;
 
 typedef struct sphere_t {
