@@ -27,48 +27,29 @@ static void init_subsamples_n(u32_t width, u32_t height, vec2_t *subsamples, u32
 	}
 }
 
-static bool_t closest_hit(const render_queue_t *rgraph, const ray_t *ray, ray_hit_t *closest_hit,
-                          const material_t **hit_mtl) {
-	closest_hit->t = INFINITY;
-	bool_t has_hit = FALSE;
-
-	for(u32_t i = 0; i < rgraph->sphere_count; ++i) {
-		ray_hit_t hit;
-		const sphere_t *old_sphere = &rgraph->spheres[i].shape.sphere;
-		sphere_t new_sphere = *old_sphere;
-		if(!vec3_eq(old_sphere->center, rgraph->spheres[i].previous_position)) {
-			new_sphere.center = vec3_mix(old_sphere->center, rgraph->spheres[i].previous_position, rand_0f_to_1f());
-		}
-		if(ray_cast_sphere(ray, &new_sphere, 0.001f, 1000.f, &hit)) {
-			if(hit.t < closest_hit->t) {
-				*closest_hit = hit;
-				*hit_mtl = &rgraph->spheres[i].material;
-				has_hit = TRUE;
-			}
-		}
-	}
-
-	return has_hit;
-}
-
-static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth) {
+static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth, u32_t max_depth) {
 	ray_hit_t hit;
 	const material_t *hit_mtl;
 	vec3_t color = {0};
 
-	if(closest_hit(rgraph, ray, &hit, &hit_mtl)) {
+	if(render_queue_closest_hit(rgraph, ray, &hit, &hit_mtl)) {
 		ray_t new_ray;
 		vec3_t attenuation;
-		if(depth < 50 && hit_mtl->scatter_callback(hit_mtl, ray, &hit, &attenuation, &new_ray)) {
-			color = attenuation * trace(rgraph, &new_ray, depth + 1);
+		const vec3_t emitted = hit_mtl->emit_callback(hit_mtl, &hit);
+		if(depth < max_depth && hit_mtl->scatter_callback(hit_mtl, ray, &hit, &attenuation, &new_ray)) {
+			color = emitted + attenuation * trace(rgraph, &new_ray, depth + 1, max_depth);
 		} else {
-			color = vec3_init_f(0.0f);
+			color = emitted;
 		}
 	} else {
+#if 0
 		const vec3_t c_a = {0.9f, 0.9f, 1.0f};
 		const vec3_t c_b = {0.4f, 0.6f, 1.0f};
 		const f32_t t = 0.5f * (ray->direction.y + 1.0f);
 		color = vec3_mix(c_a, c_b, t);
+#else
+		color = vec3_init_f(0.0f);
+#endif
 	}
 
 	return color;
@@ -77,6 +58,8 @@ static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth)
 static render_queue_t random_scene() {
 	const u32_t n = 500;
 	renderable_t *spheres = (renderable_t *)malloc(sizeof(renderable_t) * (n + 1));
+	memset(spheres, 0, sizeof(renderable_t) * (n + 1));
+
 	spheres[0].shape.sphere = sphere_init(vec3_init_3f(0.0f, -1000.0f, 0.0f), 1000.0f);
 	spheres[0].previous_position = spheres[0].shape.sphere.center;
 	spheres[0].material = material_init_lambertian();
@@ -131,11 +114,87 @@ static render_queue_t random_scene() {
 	sphere->material = material_init_metal();
 	sphere->material.albedo_texture = texture_init_constant(vec3_init_3f(0.7f, 0.6f, 0.5f));
 	sphere->material.metal_fuzz_texture = texture_init_constant(vec3_init_f(0.0f));
+
+	sphere = &spheres[i++];
+	sphere->shape.sphere = sphere_init(vec3_init_3f(0.0f, 3.5f, 0.0f), 1.0f);
+	sphere->previous_position = sphere->shape.sphere.center;
+	sphere->material = material_init_emissive();
+	sphere->material.emissive_texture = texture_init_constant(vec3_init_f(1.0f));
+
+	renderable_t *mesh = &spheres[i++];
+	mesh->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	triangle_t *triangles = malloc(sizeof(triangle_t));
+	triangles[0].vertices[0] = vec3_init_3f(-1.0f, 1.2f, 1.0f);
+	triangles[0].vertices[1] = vec3_init_3f(+1.0f, 1.2f, 1.0f);
+	triangles[0].vertices[2] = vec3_init_3f(+0.0f, 2.2f, 1.0f);
+	mesh->shape.mesh.triangles = triangles;
+	mesh->shape.mesh.triangle_count = 1;
+	mesh->material = material_init_emissive();
+	mesh->material.emissive_texture = texture_init_constant(vec3_init_3f(1.0f, 0.0f, 0.0f));
+
 	assert(i <= n + 1);
+	render_queue_t rgraph;
+	rgraph.renderable_count = i;
+	rgraph.renderables = spheres;
+	return rgraph;
+}
+
+render_queue_t cornell_box() {
+	const u32_t renderable_count = 6;
+	renderable_t *renderables = malloc(sizeof(renderable_t) * renderable_count);
+	memset(renderables, 0, sizeof(renderable_t) * renderable_count);
+
+	renderable_t *left_wall = &renderables[0];
+	left_wall->material = material_init_lambertian();
+	left_wall->material.albedo_texture = texture_init_constant(vec3_init_3f(0.12, 0.45, 0.15));
+	left_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	left_wall->shape.mesh.quad_count = 1;
+	left_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
+	left_wall->shape.mesh.quads[0] = quad_init_yz(555.0f, vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), TRUE);
+
+	renderable_t *right_wall = &renderables[1];
+	right_wall->material = material_init_lambertian();
+	right_wall->material.albedo_texture = texture_init_constant(vec3_init_3f(0.65, 0.05, 0.05));
+	right_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	right_wall->shape.mesh.quad_count = 1;
+	right_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
+	right_wall->shape.mesh.quads[0] = quad_init_yz(0.0f, vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), FALSE);
+
+	renderable_t *top_wall = &renderables[2];
+	top_wall->material = material_init_lambertian();
+	top_wall->material.albedo_texture = texture_init_constant(vec3_init_f(0.73));
+	top_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	top_wall->shape.mesh.quad_count = 1;
+	top_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
+	top_wall->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(0.0f, 555.0f), 555.0, vec2_init_2f(0.0f, 555.0f), TRUE);
+
+	renderable_t *bottom_wall = &renderables[3];
+	bottom_wall->material = material_init_lambertian();
+	bottom_wall->material.albedo_texture = texture_init_constant(vec3_init_f(0.73));
+	bottom_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	bottom_wall->shape.mesh.quad_count = 1;
+	bottom_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
+	bottom_wall->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(0.0f, 555.0f), 0.0, vec2_init_2f(0.0f, 555.0f), FALSE);
+
+	renderable_t *back_wall = &renderables[4];
+	back_wall->material = material_init_lambertian();
+	back_wall->material.albedo_texture = texture_init_constant(vec3_init_f(0.73));
+	back_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	back_wall->shape.mesh.quad_count = 1;
+	back_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
+	back_wall->shape.mesh.quads[0] = quad_init_xy(vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), 555.0f, TRUE);
+
+	renderable_t *light = &renderables[5];
+	light->material = material_init_emissive();
+	light->material.emissive_texture = texture_init_constant(vec3_init_f(15.0f));
+	light->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	light->shape.mesh.quad_count = 1;
+	light->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
+	light->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(213.0f, 343.0f), 554.0f, vec2_init_2f(227.0f, 332.0f), TRUE);
 
 	render_queue_t rgraph;
-	rgraph.sphere_count = i;
-	rgraph.spheres = spheres;
+	rgraph.renderable_count = renderable_count;
+	rgraph.renderables = renderables;
 	return rgraph;
 }
 
@@ -143,6 +202,7 @@ typedef struct run_context_t {
 	u32_t tile_size;
 	u32_t width;
 	u32_t height;
+	u32_t max_trace_depth;
 	vec2_t *subsamples;
 	u32_t subsample_count;
 	mat4_t camera_transform;
@@ -176,13 +236,12 @@ static void *run_thread(void *user_data) {
 
 					const vec4_t view_dir4 =
 					    mat4_mul_vec4(&ctx->invert_vp_matrix, vec4_init_4f(s_ndc.x, s_ndc.y, 1.0f, 1.0f));
-					const vec3_t view_dir = view_dir4.xyz / view_dir4.w;
+					const vec3_t far_point = view_dir4.xyz / view_dir4.w;
 
-					mat3_t cam_rot = mat3_init_mat4(&ctx->camera_transform);
 					const ray_t primary_ray =
-					    ray_init(ctx->camera_position, vec3_normalize(mat3_mul_vec3(&cam_rot, view_dir)));
+					    ray_init(ctx->camera_position, vec3_normalize(far_point - ctx->camera_position));
 
-					color += trace(&ctx->render_graph, &primary_ray, 0);
+					color += trace(&ctx->render_graph, &primary_ray, 0, ctx->max_trace_depth);
 				}
 
 				color /= (f32_t)ctx->subsample_count;
@@ -212,8 +271,8 @@ int main(int argc, char **argv) {
 	seed_mt(time(NULL));
 	srand(time(NULL));
 
-	const u32_t width = 1920;
-	const u32_t height = 1080;
+	const u32_t width = 1920 / 2;
+	const u32_t height = 1080 / 2;
 	const u32_t subsample_count = 8;
 
 	run_context_t ctx;
@@ -221,6 +280,7 @@ int main(int argc, char **argv) {
 	ctx.tile_size = 64;
 	ctx.width = width;
 	ctx.height = height;
+	ctx.max_trace_depth = 8;
 	vec2_t subsamples[subsample_count];
 	ctx.subsamples = subsamples;
 	ctx.subsample_count = subsample_count;
@@ -230,12 +290,15 @@ int main(int argc, char **argv) {
 		init_subsamples_n(width, height, ctx.subsamples, subsample_count);
 	}
 
-	const vec3_t cam_pos = vec3_init_3f(0.0f, 1.1f, 6.0f);
-	const vec3_t ref_point = cam_pos + vec3_init_3f(0.0f, -0.1f, -1.0f);
+	// const vec3_t cam_pos = vec3_init_3f(0.0f, 1.1f, 6.0f);
+	const vec3_t cam_pos = vec3_init_3f(278.0f, 278.0f, -800.0f);
+	// const vec3_t ref_point = cam_pos + vec3_init_3f(0.0f, -0.1f, -1.0f);
+	const vec3_t ref_point = cam_pos + vec3_init_3f(0.0f, 0.0f, 1.0f);
+	// const vec3_t ref_point = vec3_init_3f(278.0f, 278.0f, 0.0f);
 	const vec3_t up = vec3_init_3f(0.0f, 1.0f, 0.0f);
 	const mat4_t view_mat = look_at(cam_pos, ref_point, up);
 	const mat4_t cam_trf = mat4_invert(&view_mat);
-	const mat4_t proj_mat = perspective(to_rad(70.0f), (f32_t)width / (f32_t)height, 0.1f, 1000.0f);
+	const mat4_t proj_mat = perspective(to_rad(40.0f), (f32_t)width / (f32_t)height, 0.1f, 1000.0f);
 	const mat4_t vp_mat = mat4_mul_mat4(&proj_mat, &view_mat);
 	const mat4_t inv_vp_mat = mat4_invert(&vp_mat);
 
@@ -266,7 +329,8 @@ int main(int argc, char **argv) {
 	ctx.render_graph.spheres = s;
 	ctx.render_graph.sphere_count = NELEMS(s);
 #else
-	ctx.render_graph = random_scene();
+	// ctx.render_graph = random_scene();
+	ctx.render_graph = cornell_box();
 #endif
 
 	u8_t *pixel_buffer = malloc(height * width * 3);

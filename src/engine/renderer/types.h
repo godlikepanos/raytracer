@@ -8,6 +8,8 @@ struct texture_t;
 typedef bool_t (*scatter_callback_t)(const struct material_t *mtl, const ray_t *ray, const ray_hit_t *hit,
                                      vec3_t *attenuation, ray_t *scattered_ray);
 
+typedef vec3_t (*emit_callback_t)(const struct material_t *mtl, const ray_hit_t *hit);
+
 typedef vec3_t (*texture_callback_t)(const struct texture_t *tex, vec2_t uv, vec3_t point);
 
 typedef struct texture_t {
@@ -21,23 +23,44 @@ typedef struct texture_t {
 
 typedef struct material_t {
 	scatter_callback_t scatter_callback;
+	emit_callback_t emit_callback;
 	texture_t albedo_texture;
 	texture_t metal_fuzz_texture;
 	texture_t dielectric_reflection_index;
+	texture_t emissive_texture;
 } material_t;
+
+typedef struct mesh_t {
+	triangle_t *triangles;
+	quadrilateral_t *quads;
+	u32_t triangle_count;
+	u32_t quad_count;
+	vec3_t world_position;
+	vec3_t world_scale;
+	mat3_t world_rotation;
+} mesh_t;
+
+typedef enum renderable_shape_type_e {
+	RENDERABLE_SHAPE_TYPE_SPHERE,
+	RENDERABLE_SHAPE_TYPE_AABB,
+	RENDERABLE_SHAPE_TYPE_MESH,
+	RENDERABLE_SHAPE_TYPE_COUNT
+} renderable_shape_type_e;
 
 typedef struct renderable_t {
 	union {
 		sphere_t sphere;
 		aabb_t box;
+		mesh_t mesh;
 	} shape;
+	renderable_shape_type_e shape_type;
 	vec3_t previous_position;
 	material_t material;
 } renderable_t;
 
 typedef struct render_queue_t {
-	const renderable_t *spheres;
-	u32_t sphere_count;
+	const renderable_t *renderables;
+	u32_t renderable_count;
 } render_queue_t;
 
 typedef struct bvh_node_t {

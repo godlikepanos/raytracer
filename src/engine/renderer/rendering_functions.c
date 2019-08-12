@@ -65,14 +65,61 @@ bool_t dielectric_scatter(const material_t *mtl, const ray_t *in_ray, const ray_
 aabb_t render_queue_compute_aabb(const render_queue_t *rqueue) {
 	aabb_t out = aabb_init(vec3_init_f(0.0f), vec3_init_f(0.0001f));
 
-	if(rqueue->sphere_count > 0) {
-		out = sphere_compute_aabb(&rqueue->spheres[0].shape.sphere);
+	if(rqueue->renderable_count > 0) {
+		out = sphere_compute_aabb(&rqueue->renderables[0].shape.sphere);
 
-		for(u32_t i = 1; i < rqueue->sphere_count; ++i) {
-			const aabb_t box = sphere_compute_aabb(&rqueue->spheres[i].shape.sphere);
+		for(u32_t i = 1; i < rqueue->renderable_count; ++i) {
+			const aabb_t box = sphere_compute_aabb(&rqueue->renderables[i].shape.sphere);
 			out = aabb_union(&out, &box);
 		}
 	}
 
 	return out;
+}
+
+bool_t render_queue_closest_hit(const render_queue_t *rgraph, const ray_t *ray, ray_hit_t *closest_hit,
+                                const material_t **hit_mtl) {
+	closest_hit->t = INFINITY;
+	bool_t has_hit = FALSE;
+	const f32_t t_min = 0.001;
+	const f32_t t_max = 5000.0f;
+
+	for(u32_t i = 0; i < rgraph->renderable_count; ++i) {
+		const renderable_t *renderable = &rgraph->renderables[i];
+		ray_hit_t hit;
+
+		if(renderable->shape_type == RENDERABLE_SHAPE_TYPE_SPHERE) {
+			const sphere_t *sphere = &rgraph->renderables[i].shape.sphere;
+			sphere_t new_sphere = *sphere;
+			if(!vec3_eq(sphere->center, rgraph->renderables[i].previous_position)) {
+				new_sphere.center = vec3_mix(sphere->center, rgraph->renderables[i].previous_position, rand_0f_to_1f());
+			}
+			if(ray_cast_sphere(ray, &new_sphere, t_min, t_max, &hit) && hit.t < closest_hit->t) {
+				*closest_hit = hit;
+				*hit_mtl = &rgraph->renderables[i].material;
+				has_hit = TRUE;
+			}
+		} else if(renderable->shape_type == RENDERABLE_SHAPE_TYPE_MESH) {
+			const mesh_t *mesh = &rgraph->renderables[i].shape.mesh;
+			for(u32_t t = 0; t < mesh->triangle_count; ++t) {
+				if(ray_cast_triangle(ray, &mesh->triangles[t], t_min, t_max, &hit) && hit.t < closest_hit->t) {
+					*closest_hit = hit;
+					*hit_mtl = &rgraph->renderables[i].material;
+					has_hit = TRUE;
+				}
+			}
+
+			for(u32_t t = 0; t < mesh->quad_count; ++t) {
+				if(ray_cast_quad(ray, &mesh->quads[t], t_min, t_max, &hit) && hit.t < closest_hit->t) {
+					*closest_hit = hit;
+					*hit_mtl = &rgraph->renderables[i].material;
+					has_hit = TRUE;
+				}
+			}
+		} else {
+			assert(0);
+		}
+	}
+
+	return has_hit;
 }

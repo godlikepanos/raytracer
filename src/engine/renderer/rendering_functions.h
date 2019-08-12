@@ -62,6 +62,16 @@ static inline texture_t texture_init_image(const char_t *filename) {
 }
 
 // material_t
+static inline bool_t no_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
+                                ray_t *scattered_ray) {
+	(void)mtl;
+	(void)in_ray;
+	(void)hit;
+	(void)scattered_ray;
+	*attenuation = vec3_init_f(0.0f);
+	return FALSE;
+}
+
 bool_t lambertian_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
                           ray_t *scattered_ray);
 
@@ -71,10 +81,21 @@ bool_t metal_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t
 bool_t dielectric_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
                           ray_t *scattered_ray);
 
+static inline vec3_t zero_emission(const struct material_t *mtl, const ray_hit_t *hit) {
+	(void)mtl;
+	(void)hit;
+	return vec3_init_f(0.0f);
+}
+
+static inline vec3_t constant_emission(const struct material_t *mtl, const ray_hit_t *hit) {
+	return mtl->emissive_texture.callback(&mtl->emissive_texture, hit->uv, hit->point);
+}
+
 static inline material_t material_init_lambertian() {
 	material_t mtl;
 	memset(&mtl, 0, sizeof(mtl));
 	mtl.scatter_callback = lambertian_scatter;
+	mtl.emit_callback = zero_emission;
 	return mtl;
 }
 
@@ -82,6 +103,7 @@ static inline material_t material_init_metal() {
 	material_t mtl;
 	memset(&mtl, 0, sizeof(mtl));
 	mtl.scatter_callback = metal_scatter;
+	mtl.emit_callback = zero_emission;
 	return mtl;
 }
 
@@ -89,8 +111,20 @@ static inline material_t material_init_dielectric() {
 	material_t mtl;
 	memset(&mtl, 0, sizeof(mtl));
 	mtl.scatter_callback = dielectric_scatter;
+	mtl.emit_callback = zero_emission;
+	return mtl;
+}
+
+static inline material_t material_init_emissive() {
+	material_t mtl;
+	memset(&mtl, 0, sizeof(mtl));
+	mtl.scatter_callback = no_scatter;
+	mtl.emit_callback = constant_emission;
 	return mtl;
 }
 
 // render_queue_t
 aabb_t render_queue_compute_aabb(const render_queue_t *rqueue);
+
+bool_t render_queue_closest_hit(const render_queue_t *rgraph, const ray_t *ray, ray_hit_t *closest_hit,
+                                const material_t **hit_mtl);

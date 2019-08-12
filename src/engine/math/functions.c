@@ -133,6 +133,8 @@ mat4_t look_at(vec3_t eye, vec3_t center, vec3_t up) {
 	const vec3_t vdir = vec3_normalize(center - eye);
 	const vec3_t vside = vec3_normalize(vec3_cross(vdir, up));
 	const vec3_t vup = vec3_normalize(vec3_cross(vside, vdir));
+	// const vec3_t vup = up - vdir * vec3_dot(up, vdir);
+	// const vec3_t vside = vec3_cross(vdir, up);
 	const vec3_t x = vside;
 	const vec3_t y = vup;
 	const vec3_t z = -vdir;
@@ -199,6 +201,63 @@ bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f3
 			hit->uv = sphere_compute_uv(hit->point - sphere->center);
 			return TRUE;
 		}
+	}
+
+	return FALSE;
+}
+
+bool_t ray_cast_triangle(const ray_t *ray, const triangle_t *tri, f32_t t_min, f32_t t_max, ray_hit_t *hit) {
+	const vec3_t vert0 = tri->vertices[0];
+	const vec3_t vert1 = tri->vertices[1];
+	const vec3_t vert2 = tri->vertices[2];
+	const vec3_t edge1 = vert1 - vert0;
+	const vec3_t edge2 = vert2 - vert0;
+
+	const vec3_t pvec = vec3_cross(ray->direction, edge2);
+	const f32_t det = vec3_dot(edge1, pvec);
+
+	if(det < EPSILON) {
+		return FALSE;
+	}
+
+	const vec3_t tvec = ray->origin - vert0;
+	const f32_t u = vec3_dot(tvec, pvec) / det;
+	if(u < 0.0f || u > 1.0f) {
+		return FALSE;
+	}
+
+	const vec3_t qvec = vec3_cross(tvec, edge1);
+	const f32_t v = vec3_dot(ray->direction, qvec) / det;
+	if(v < 0.0f || u + v > 1.0f) {
+		return FALSE;
+	}
+
+	const f32_t t = vec3_dot(edge2, qvec) / det;
+	if(t < t_min || t > t_max) {
+		return FALSE;
+	}
+
+	hit->point = ray->origin + ray->direction * t;
+	hit->t = t;
+	hit->normal = vec3_normalize(vec3_cross(edge1, edge2));
+	hit->uv = vec2_init_f(0.0f); // TODO
+	return TRUE;
+}
+
+bool_t ray_cast_quad(const ray_t *ray, const quadrilateral_t *quad, f32_t t_min, f32_t t_max, ray_hit_t *hit) {
+	triangle_t tri;
+	tri.vertices[0] = quad->vertices[0];
+	tri.vertices[1] = quad->vertices[1];
+	tri.vertices[2] = quad->vertices[2];
+	if(ray_cast_triangle(ray, &tri, t_min, t_max, hit)) {
+		return TRUE;
+	}
+
+	tri.vertices[0] = quad->vertices[0];
+	tri.vertices[1] = quad->vertices[2];
+	tri.vertices[2] = quad->vertices[3];
+	if(ray_cast_triangle(ray, &tri, t_min, t_max, hit)) {
+		return TRUE;
 	}
 
 	return FALSE;

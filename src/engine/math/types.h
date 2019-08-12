@@ -49,3 +49,11 @@ typedef struct aabb_t {
 	vec3_t min;
 	vec3_t max;
 } aabb_t;
+
+typedef struct triangle_t {
+	vec3_t vertices[3];
+} triangle_t;
+
+typedef struct quadrilateral_t {
+	vec3_t vertices[4];
+} quadrilateral_t;

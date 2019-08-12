@@ -186,6 +186,8 @@ static inline ray_t ray_init(vec3_t point, vec3_t normal) {
 
 bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t t_max, ray_hit_t *hit);
+bool_t ray_cast_triangle(const ray_t *ray, const triangle_t *tri, f32_t t_min, f32_t t_max, ray_hit_t *hit);
+bool_t ray_cast_quad(const ray_t *ray, const quadrilateral_t *quad, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 
 bool_t ray_intersects_aabb(const ray_t *ray, const aabb_t *box, f32_t tmin, f32_t tmax);
 
@@ -200,6 +202,43 @@ static inline aabb_t aabb_union(const aabb_t *a, const aabb_t *b) {
 	c.min = vec3_min(a->min, b->min);
 	c.max = vec3_min(a->max, b->max);
 	return c;
+}
+
+// quadrilateral_t
+static inline quadrilateral_t quad_flip(const quadrilateral_t *q) {
+	quadrilateral_t out;
+	out.vertices[0] = q->vertices[0];
+	out.vertices[1] = q->vertices[3];
+	out.vertices[2] = q->vertices[2];
+	out.vertices[3] = q->vertices[1];
+	return out;
+}
+
+static inline quadrilateral_t quad_init_xy(vec2_t x, vec2_t y, f32_t z, bool_t flip) {
+	quadrilateral_t q;
+	q.vertices[0] = vec3_init_3f(x.x, y.x, z);
+	q.vertices[1] = vec3_init_3f(x.y, y.x, z);
+	q.vertices[2] = vec3_init_3f(x.y, y.y, z);
+	q.vertices[3] = vec3_init_3f(x.x, y.y, z);
+	return (!flip) ? q : quad_flip(&q);
+}
+
+static inline quadrilateral_t quad_init_xz(vec2_t x, f32_t y, vec2_t z, bool_t flip) {
+	quadrilateral_t q;
+	q.vertices[0] = vec3_init_3f(x.x, y, z.y);
+	q.vertices[1] = vec3_init_3f(x.y, y, z.y);
+	q.vertices[2] = vec3_init_3f(x.y, y, z.x);
+	q.vertices[3] = vec3_init_3f(x.x, y, z.x);
+	return (!flip) ? q : quad_flip(&q);
+}
+
+static inline quadrilateral_t quad_init_yz(f32_t x, vec2_t y, vec2_t z, bool_t flip) {
+	quadrilateral_t q;
+	q.vertices[0] = vec3_init_3f(x, y.x, z.y);
+	q.vertices[1] = vec3_init_3f(x, y.x, z.x);
+	q.vertices[2] = vec3_init_3f(x, y.y, z.x);
+	q.vertices[3] = vec3_init_3f(x, y.y, z.y);
+	return (!flip) ? q : quad_flip(&q);
 }
 
 // Other
