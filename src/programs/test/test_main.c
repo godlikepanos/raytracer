@@ -27,6 +27,23 @@ static void init_subsamples_n(u32_t width, u32_t height, vec2_t *subsamples, u32
 	}
 }
 
+static mesh_t create_cube(vec3_t min, vec3_t max) {
+	quadrilateral_t *quads = malloc(sizeof(quadrilateral_t) * 6);
+	u32_t i = 0;
+	quads[i++] = quad_init_yz(min.x, vec2_init_2f(min.y, max.y), vec2_init_2f(min.z, max.z), TRUE); // Left
+	quads[i++] = quad_init_yz(max.x, vec2_init_2f(min.y, max.y), vec2_init_2f(min.z, max.z), FALSE); // Right
+	quads[i++] = quad_init_xz(vec2_init_2f(min.x, max.x), min.y, vec2_init_2f(min.z, max.z), TRUE); // Bottom
+	quads[i++] = quad_init_xz(vec2_init_2f(min.x, max.x), max.y, vec2_init_2f(min.z, max.z), FALSE); // Top
+	quads[i++] = quad_init_xy(vec2_init_2f(min.x, max.x), vec2_init_2f(min.y, max.y), max.z, FALSE); // Front
+	quads[i++] = quad_init_xy(vec2_init_2f(min.x, max.x), vec2_init_2f(min.y, max.y), min.z, TRUE); // Back
+
+	mesh_t mesh;
+	memset(&mesh, 0, sizeof(mesh));
+	mesh.quad_count = i;
+	mesh.quads = quads;
+	return mesh;
+}
+
 static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth, u32_t max_depth) {
 	ray_hit_t hit;
 	const material_t *hit_mtl;
@@ -140,11 +157,12 @@ static render_queue_t random_scene() {
 }
 
 render_queue_t cornell_box() {
-	const u32_t renderable_count = 6;
+	const u32_t renderable_count = 8;
 	renderable_t *renderables = malloc(sizeof(renderable_t) * renderable_count);
 	memset(renderables, 0, sizeof(renderable_t) * renderable_count);
+	u32_t i = 0;
 
-	renderable_t *left_wall = &renderables[0];
+	renderable_t *left_wall = &renderables[i++];
 	left_wall->material = material_init_lambertian();
 	left_wall->material.albedo_texture = texture_init_constant(vec3_init_3f(0.12, 0.45, 0.15));
 	left_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
@@ -152,7 +170,7 @@ render_queue_t cornell_box() {
 	left_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	left_wall->shape.mesh.quads[0] = quad_init_yz(555.0f, vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), TRUE);
 
-	renderable_t *right_wall = &renderables[1];
+	renderable_t *right_wall = &renderables[i++];
 	right_wall->material = material_init_lambertian();
 	right_wall->material.albedo_texture = texture_init_constant(vec3_init_3f(0.65, 0.05, 0.05));
 	right_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
@@ -160,7 +178,7 @@ render_queue_t cornell_box() {
 	right_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	right_wall->shape.mesh.quads[0] = quad_init_yz(0.0f, vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), FALSE);
 
-	renderable_t *top_wall = &renderables[2];
+	renderable_t *top_wall = &renderables[i++];
 	top_wall->material = material_init_lambertian();
 	top_wall->material.albedo_texture = texture_init_constant(vec3_init_f(0.73));
 	top_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
@@ -168,7 +186,7 @@ render_queue_t cornell_box() {
 	top_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	top_wall->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(0.0f, 555.0f), 555.0, vec2_init_2f(0.0f, 555.0f), TRUE);
 
-	renderable_t *bottom_wall = &renderables[3];
+	renderable_t *bottom_wall = &renderables[i++];
 	bottom_wall->material = material_init_lambertian();
 	bottom_wall->material.albedo_texture = texture_init_constant(vec3_init_f(0.73));
 	bottom_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
@@ -176,7 +194,7 @@ render_queue_t cornell_box() {
 	bottom_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	bottom_wall->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(0.0f, 555.0f), 0.0, vec2_init_2f(0.0f, 555.0f), FALSE);
 
-	renderable_t *back_wall = &renderables[4];
+	renderable_t *back_wall = &renderables[i++];
 	back_wall->material = material_init_lambertian();
 	back_wall->material.albedo_texture = texture_init_constant(vec3_init_f(0.73));
 	back_wall->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
@@ -184,7 +202,7 @@ render_queue_t cornell_box() {
 	back_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	back_wall->shape.mesh.quads[0] = quad_init_xy(vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), 555.0f, TRUE);
 
-	renderable_t *light = &renderables[5];
+	renderable_t *light = &renderables[i++];
 	light->material = material_init_emissive();
 	light->material.emissive_texture = texture_init_constant(vec3_init_f(15.0f));
 	light->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
@@ -192,8 +210,20 @@ render_queue_t cornell_box() {
 	light->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	light->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(213.0f, 343.0f), 554.0f, vec2_init_2f(227.0f, 332.0f), TRUE);
 
+	renderable_t *box1 = &renderables[i++];
+	box1->material = material_init_lambertian();
+	box1->material.albedo_texture = texture_init_constant(vec3_init_f(0.75f));
+	box1->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	box1->shape.mesh = create_cube(vec3_init_3f(130, 0, 65), vec3_init_3f(295, 160, 230));
+
+	renderable_t *box2 = &renderables[i++];
+	box2->material = material_init_lambertian();
+	box2->material.albedo_texture = texture_init_constant(vec3_init_f(0.75));
+	box2->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	box2->shape.mesh = create_cube(vec3_init_3f(265, 0, 295), vec3_init_3f(430, 330, 460));
+
 	render_queue_t rgraph;
-	rgraph.renderable_count = renderable_count;
+	rgraph.renderable_count = i;
 	rgraph.renderables = renderables;
 	return rgraph;
 }
@@ -273,7 +303,7 @@ int main(int argc, char **argv) {
 
 	const u32_t width = 1920 / 2;
 	const u32_t height = 1080 / 2;
-	const u32_t subsample_count = 8;
+	const u32_t subsample_count = 128;
 
 	run_context_t ctx;
 	memset(&ctx, 0, sizeof(ctx));

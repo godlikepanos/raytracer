@@ -70,9 +70,13 @@ static inline f32_t vec3_dot(vec3_t a, vec3_t b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-static inline f32_t vec3_length(vec3_t a) {
+static inline f32_t vec3_length_squared(vec3_t a) {
 	const f32_t len_sq = vec3_dot(a, a);
-	return sqrtf(len_sq);
+	return len_sq;
+}
+
+static inline f32_t vec3_length(vec3_t a) {
+	return sqrtf(vec3_length_squared(a));
 }
 
 static inline vec3_t vec3_normalize(vec3_t a) {
@@ -133,6 +137,7 @@ static inline f32_t vec4_dot(vec4_t a, vec4_t b) {
 
 // mat3_t
 mat3_t mat3_init_mat4(const mat4_t *m4);
+mat3_t mat3_init_axis_angles(vec3_t axis, f32_t angle);
 vec3_t mat3_mul_vec3(const mat3_t *m, vec3_t v);
 
 // mat4_t
@@ -247,6 +252,6 @@ static inline vec3_t random_in_unit_sphere() {
 	do {
 		out = vec3_init_3f(rand_0f_to_1f(), rand_0f_to_1f(), rand_0f_to_1f());
 		out = out * 2.0f - 1.0f;
-	} while(vec3_length(out) <= 1.0f);
+	} while(vec3_length_squared(out) <= 1.0f - EPSILON);
 	return out;
 }

@@ -10,6 +10,34 @@ mat3_t mat3_init_mat4(const mat4_t *m4) {
 	return out;
 }
 
+mat3_t mat3_init_axis_angles(vec3_t axis, f32_t angle) {
+	assert(fabs(vec3_length(axis) - 1.0f) < EPSILON);
+	mat3_t m;
+
+	const f32_t c = cos(angle);
+	const f32_t s = sin(angle);
+	const f32_t t = 1.0f - c;
+
+	m.m[0][0] = c + axis.x * axis.x * t;
+	m.m[1][1] = c + axis.y * axis.y * t;
+	m.m[2][2] = c + axis.z * axis.z * t;
+
+	f32_t tmp1 = axis.x * axis.y * t;
+	f32_t tmp2 = axis.z * s;
+	m.m[1][0] = tmp1 + tmp2;
+	m.m[0][1] = tmp1 - tmp2;
+	tmp1 = axis.x * axis.z * t;
+	tmp2 = axis.y * s;
+	m.m[2][0] = tmp1 - tmp2;
+	m.m[0][2] = tmp1 + tmp2;
+	tmp1 = axis.y * axis.z * t;
+	tmp2 = axis.x * s;
+	m.m[2][1] = tmp1 + tmp2;
+	m.m[1][2] = tmp1 - tmp2;
+
+	return m;
+}
+
 vec3_t mat3_mul_vec3(const mat3_t *m, vec3_t v) {
 	vec3_t out;
 	for(u32_t j = 0; j < 3; j++) {
