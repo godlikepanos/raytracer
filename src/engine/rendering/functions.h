@@ -1,7 +1,7 @@
 #pragma once
 
 #include <engine/math.h>
-#include <engine/renderer/types.h>
+#include <engine/rendering/types.h>
 #include <external/stb_image.h>
 
 // texture_t

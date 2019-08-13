@@ -1,4 +1,4 @@
-#include <engine/renderer/rendering_functions.h>
+#include <engine/rendering/functions.h>
 
 static f32_t schlick(f32_t cosine, f32_t ref_idx) {
 	f32_t r0 = (1.0f - ref_idx) / (1.0f + ref_idx);
