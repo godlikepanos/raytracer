@@ -131,22 +131,44 @@ static inline vec4_t vec4_init_4f(f32_t x, f32_t y, f32_t z, f32_t w) {
 	return v;
 }
 
+static inline vec4_t vec4_init_vec3(vec3_t v3, f32_t w) {
+	const vec4_t v = {v3.x, v3.y, v3.z, w};
+	return v;
+}
+
 static inline f32_t vec4_dot(vec4_t a, vec4_t b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
 
 // mat3_t
+mat3_t mat3_init_identity();
 mat3_t mat3_init_mat4(const mat4_t *m4);
 mat3_t mat3_init_axis_angles(vec3_t axis, f32_t angle);
 vec3_t mat3_mul_vec3(const mat3_t *m, vec3_t v);
 
 // mat4_t
 mat4_t mat4_init_f(f32_t f);
+mat4_t mat4_init_transform(const transform_t *trf);
 mat4_t mat4_mul_mat4(const mat4_t *a, const mat4_t *b);
 vec4_t mat4_mul_vec4(const mat4_t *a, vec4_t b);
 mat4_t mat4_invert(const mat4_t *mat);
 mat4_t look_at(vec3_t eye, vec3_t center, vec3_t up);
 mat4_t perspective(f32_t fovy, f32_t aspect, f32_t near, f32_t far);
+
+// transform_t
+static inline transform_t transform_init_trs(vec3_t translation, const mat3_t *rotation, vec3_t scale) {
+	const transform_t out = {translation, *rotation, scale};
+	return out;
+}
+
+static inline transform_t transform_init_t(vec3_t translation) {
+	const mat3_t identity = mat3_init_identity();
+	return transform_init_trs(translation, &identity, vec3_init_f(1.0f));
+}
+
+static inline transform_t transform_init_identity() {
+	return transform_init_t(vec3_init_f(0.0f));
+}
 
 // sphere_t
 static inline sphere_t sphere_init(vec3_t center, f32_t radius) {

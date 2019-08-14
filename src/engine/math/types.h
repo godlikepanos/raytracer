@@ -18,6 +18,12 @@ typedef struct mat4_t {
 	vec4_t m[4];
 } mat4_t;
 
+typedef struct transform_t {
+	vec3_t translation;
+	mat3_t rotation;
+	vec3_t scale;
+} transform_t;
+
 typedef enum collision_shape_type_e {
 	COLLISION_SHAPE_TYPE_SPHERE,
 	COLLISION_SHAPE_TYPE_PLANE,

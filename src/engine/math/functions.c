@@ -1,5 +1,13 @@
 #include <engine/math/functions.h>
 
+mat3_t mat3_init_identity() {
+	mat3_t m;
+	m.m[0] = vec3_init_3f(1.0f, 0.0f, 0.0f);
+	m.m[1] = vec3_init_3f(0.0f, 1.0f, 0.0f);
+	m.m[2] = vec3_init_3f(0.0f, 0.0f, 1.0f);
+	return m;
+}
+
 mat3_t mat3_init_mat4(const mat4_t *m4) {
 	mat3_t out;
 	for(u32_t j = 0; j < 3; ++j) {
@@ -52,8 +60,25 @@ vec3_t mat3_mul_vec3(const mat3_t *m, vec3_t v) {
 
 mat4_t mat4_init_f(f32_t f) {
 	mat4_t m;
-	for(u32_t i = 0; i < 4; ++i)
+	for(u32_t i = 0; i < 4; ++i) {
 		m.m[i] = vec4_init_f(f);
+	}
+	return m;
+}
+
+mat4_t mat4_init_transform(const transform_t *trf) {
+	mat4_t m;
+	for(u32_t j = 0; j < 3; j++) {
+		for(u32_t i = 0; i < 3; i++) {
+			m.m[j][i] = trf->rotation.m[j][i] * trf->scale[i];
+		}
+	}
+	m.m[0][3] = trf->translation[0];
+	m.m[1][3] = trf->translation[1];
+	m.m[2][3] = trf->translation[2];
+
+	m.m[3][0] = m.m[3][1] = m.m[3][2] = 0.0f;
+	m.m[3][3] = 1.0f;
 	return m;
 }
 

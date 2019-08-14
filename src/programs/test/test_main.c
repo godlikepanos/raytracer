@@ -30,12 +30,12 @@ static void init_subsamples_n(u32_t width, u32_t height, vec2_t *subsamples, u32
 static mesh_t create_cube(vec3_t min, vec3_t max) {
 	quadrilateral_t *quads = malloc(sizeof(quadrilateral_t) * 6);
 	u32_t i = 0;
-	quads[i++] = quad_init_yz(min.x, vec2_init_2f(min.y, max.y), vec2_init_2f(min.z, max.z), TRUE); // Left
+	quads[i++] = quad_init_yz(min.x, vec2_init_2f(min.y, max.y), vec2_init_2f(min.z, max.z), TRUE);  // Left
 	quads[i++] = quad_init_yz(max.x, vec2_init_2f(min.y, max.y), vec2_init_2f(min.z, max.z), FALSE); // Right
-	quads[i++] = quad_init_xz(vec2_init_2f(min.x, max.x), min.y, vec2_init_2f(min.z, max.z), TRUE); // Bottom
+	quads[i++] = quad_init_xz(vec2_init_2f(min.x, max.x), min.y, vec2_init_2f(min.z, max.z), TRUE);  // Bottom
 	quads[i++] = quad_init_xz(vec2_init_2f(min.x, max.x), max.y, vec2_init_2f(min.z, max.z), FALSE); // Top
 	quads[i++] = quad_init_xy(vec2_init_2f(min.x, max.x), vec2_init_2f(min.y, max.y), max.z, FALSE); // Front
-	quads[i++] = quad_init_xy(vec2_init_2f(min.x, max.x), vec2_init_2f(min.y, max.y), min.z, TRUE); // Back
+	quads[i++] = quad_init_xy(vec2_init_2f(min.x, max.x), vec2_init_2f(min.y, max.y), min.z, TRUE);  // Back
 
 	mesh_t mesh;
 	memset(&mesh, 0, sizeof(mesh));
@@ -72,15 +72,43 @@ static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth,
 	return color;
 }
 
+static void init_sphere_lambertian(vec3_t pos, vec3_t prev_pos, f32_t radius, vec3_t color, renderable_t *r) {
+	r->shape.sphere = sphere_init(vec3_init_f(0.0f), radius);
+	r->shape_type = RENDERABLE_SHAPE_TYPE_SPHERE;
+	r->world_transform = transform_init_t(pos);
+	r->previous_world_transform = transform_init_t(prev_pos);
+	r->material = material_init_lambertian();
+	r->material.albedo_texture = texture_init_constant(color);
+}
+
+static void init_sphere_metal(vec3_t pos, vec3_t prev_pos, f32_t radius, vec3_t color, f32_t fuzz, renderable_t *r) {
+	r->shape.sphere = sphere_init(vec3_init_f(0.0f), radius);
+	r->shape_type = RENDERABLE_SHAPE_TYPE_SPHERE;
+	r->world_transform = transform_init_t(pos);
+	r->previous_world_transform = transform_init_t(prev_pos);
+	r->material = material_init_metal();
+	r->material.albedo_texture = texture_init_constant(color);
+	r->material.metal_fuzz_texture = texture_init_constant(vec3_init_f(fuzz));
+}
+
+static void init_sphere_dielectric(vec3_t pos, vec3_t prev_pos, f32_t radius, f32_t refl_idx, renderable_t *r) {
+	r->shape.sphere = sphere_init(vec3_init_f(0.0f), radius);
+	r->shape_type = RENDERABLE_SHAPE_TYPE_SPHERE;
+	r->world_transform = transform_init_t(pos);
+	r->previous_world_transform = transform_init_t(prev_pos);
+	r->material = material_init_dielectric();
+	r->material.dielectric_reflection_index = texture_init_constant(vec3_init_f(refl_idx));
+}
+
 static render_queue_t random_scene() {
 	const u32_t n = 500;
 	renderable_t *spheres = (renderable_t *)malloc(sizeof(renderable_t) * (n + 1));
 	memset(spheres, 0, sizeof(renderable_t) * (n + 1));
 
-	spheres[0].shape.sphere = sphere_init(vec3_init_3f(0.0f, -1000.0f, 0.0f), 1000.0f);
-	spheres[0].previous_position = spheres[0].shape.sphere.center;
-	spheres[0].material = material_init_lambertian();
+	init_sphere_lambertian(vec3_init_3f(0.0f, -1000.0f, 0.0f), vec3_init_3f(0.0f, -1000.0f, 0.0f), 1000.0f,
+	                       vec3_init_f(0.0f), &spheres[0]);
 	spheres[0].material.albedo_texture = texture_init_checker(vec3_init_3f(0.2f, 0.3f, 0.1f), vec3_init_f(0.9f));
+
 	u32_t i = 1;
 	for(i32_t a = -11; a < 11; a++) {
 		for(i32_t b = -11; b < 11; b++) {
@@ -92,62 +120,36 @@ static render_queue_t random_scene() {
 
 				const vec3_t rand_dir = random_in_unit_sphere();
 				const f32_t rand_disp = rand_0f_to_1f() * 0.3f;
-				sphere->previous_position = center + rand_dir * rand_disp;
+				const vec3_t prev_center = center + rand_dir * rand_disp;
 
 				if(choose_mat < 0.8f) {
-					sphere->material = material_init_lambertian();
-					sphere->material.albedo_texture = texture_init_constant(
+					const vec3_t color =
 					    vec3_init_3f(rand_0f_to_1f() * rand_0f_to_1f(), rand_0f_to_1f() * rand_0f_to_1f(),
-					                 rand_0f_to_1f() * rand_0f_to_1f()));
+					                 rand_0f_to_1f() * rand_0f_to_1f());
+					init_sphere_lambertian(center, prev_center, 0.2f, color, sphere);
 				} else if(choose_mat < 0.95f) {
-					sphere->material = material_init_metal();
-					sphere->material.albedo_texture = texture_init_constant(
-					    vec3_init_3f(0.5f * (1.0f + rand_0f_to_1f()), 0.5f * (1.0f + rand_0f_to_1f()),
-					                 0.5f * (1.0f + rand_0f_to_1f())));
-					sphere->material.metal_fuzz_texture = texture_init_constant(vec3_init_f(0.5f * rand_0f_to_1f()));
+					const vec3_t color = vec3_init_3f(0.5f * (1.0f + rand_0f_to_1f()), 0.5f * (1.0f + rand_0f_to_1f()),
+					                                  0.5f * (1.0f + rand_0f_to_1f()));
+
+					init_sphere_metal(center, prev_center, 0.2f, color, 0.5f * rand_0f_to_1f(), sphere);
 				} else {
-					sphere->material = material_init_dielectric();
-					sphere->material.dielectric_reflection_index = texture_init_constant(vec3_init_f(1.5f));
+					init_sphere_dielectric(center, prev_center, 0.2f, 1.5f, sphere);
 				}
 			}
 		}
 	}
 
 	renderable_t *sphere = &spheres[i++];
-	sphere->shape.sphere = sphere_init(vec3_init_3f(0.0f, 1.0f, 0.0f), 1.0f);
-	sphere->previous_position = sphere->shape.sphere.center;
-	sphere->material = material_init_dielectric();
-	sphere->material.dielectric_reflection_index = texture_init_constant(vec3_init_f(1.5f));
+	init_sphere_dielectric(vec3_init_3f(0.0f, 1.0f, 0.0f), vec3_init_3f(0.0f, 1.0f, 0.0f), 1.0f, 1.5f, sphere);
 
 	sphere = &spheres[i++];
-	sphere->shape.sphere = sphere_init(vec3_init_3f(-4.0f, 1.0f, 0.0f), 1.0f);
-	sphere->previous_position = sphere->shape.sphere.center;
-	sphere->material = material_init_lambertian();
+	init_sphere_lambertian(vec3_init_3f(-4.0f, 1.0f, 0.0f), vec3_init_3f(-4.0f, 1.0f, 0.0f), 1.0f, vec3_init_f(0.0f),
+	                       sphere);
 	sphere->material.albedo_texture = texture_init_image("data/earth.jpg");
 
 	sphere = &spheres[i++];
-	sphere->shape.sphere = sphere_init(vec3_init_3f(4.0f, 1.0f, 0.0f), 1.0f);
-	sphere->previous_position = sphere->shape.sphere.center;
-	sphere->material = material_init_metal();
-	sphere->material.albedo_texture = texture_init_constant(vec3_init_3f(0.7f, 0.6f, 0.5f));
-	sphere->material.metal_fuzz_texture = texture_init_constant(vec3_init_f(0.0f));
-
-	sphere = &spheres[i++];
-	sphere->shape.sphere = sphere_init(vec3_init_3f(0.0f, 3.5f, 0.0f), 1.0f);
-	sphere->previous_position = sphere->shape.sphere.center;
-	sphere->material = material_init_emissive();
-	sphere->material.emissive_texture = texture_init_constant(vec3_init_f(1.0f));
-
-	renderable_t *mesh = &spheres[i++];
-	mesh->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
-	triangle_t *triangles = malloc(sizeof(triangle_t));
-	triangles[0].vertices[0] = vec3_init_3f(-1.0f, 1.2f, 1.0f);
-	triangles[0].vertices[1] = vec3_init_3f(+1.0f, 1.2f, 1.0f);
-	triangles[0].vertices[2] = vec3_init_3f(+0.0f, 2.2f, 1.0f);
-	mesh->shape.mesh.triangles = triangles;
-	mesh->shape.mesh.triangle_count = 1;
-	mesh->material = material_init_emissive();
-	mesh->material.emissive_texture = texture_init_constant(vec3_init_3f(1.0f, 0.0f, 0.0f));
+	init_sphere_metal(vec3_init_3f(4.0f, 1.0f, 0.0f), vec3_init_3f(4.0f, 1.0f, 0.0f), 1.0f,
+	                  vec3_init_3f(0.7f, 0.6f, 0.5f), 0.0f, sphere);
 
 	assert(i <= n + 1);
 	render_queue_t rgraph;
@@ -162,6 +164,15 @@ render_queue_t cornell_box() {
 	memset(renderables, 0, sizeof(renderable_t) * renderable_count);
 	u32_t i = 0;
 
+	renderable_t *light = &renderables[i++];
+	light->material = material_init_emissive();
+	light->material.emissive_texture = texture_init_constant(vec3_init_f(15.0f));
+	light->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	light->shape.mesh.quad_count = 1;
+	light->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
+	light->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(213.0f, 343.0f), 554.0f, vec2_init_2f(227.0f, 332.0f), TRUE);
+	light->world_transform = light->previous_world_transform = transform_init_identity();
+
 	renderable_t *left_wall = &renderables[i++];
 	left_wall->material = material_init_lambertian();
 	left_wall->material.albedo_texture = texture_init_constant(vec3_init_3f(0.12, 0.45, 0.15));
@@ -169,6 +180,7 @@ render_queue_t cornell_box() {
 	left_wall->shape.mesh.quad_count = 1;
 	left_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	left_wall->shape.mesh.quads[0] = quad_init_yz(555.0f, vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), TRUE);
+	left_wall->world_transform = left_wall->previous_world_transform = transform_init_identity();
 
 	renderable_t *right_wall = &renderables[i++];
 	right_wall->material = material_init_lambertian();
@@ -177,6 +189,7 @@ render_queue_t cornell_box() {
 	right_wall->shape.mesh.quad_count = 1;
 	right_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	right_wall->shape.mesh.quads[0] = quad_init_yz(0.0f, vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), FALSE);
+	right_wall->world_transform = right_wall->previous_world_transform = transform_init_identity();
 
 	renderable_t *top_wall = &renderables[i++];
 	top_wall->material = material_init_lambertian();
@@ -185,6 +198,7 @@ render_queue_t cornell_box() {
 	top_wall->shape.mesh.quad_count = 1;
 	top_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	top_wall->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(0.0f, 555.0f), 555.0, vec2_init_2f(0.0f, 555.0f), TRUE);
+	top_wall->world_transform = top_wall->previous_world_transform = transform_init_identity();
 
 	renderable_t *bottom_wall = &renderables[i++];
 	bottom_wall->material = material_init_lambertian();
@@ -193,6 +207,7 @@ render_queue_t cornell_box() {
 	bottom_wall->shape.mesh.quad_count = 1;
 	bottom_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	bottom_wall->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(0.0f, 555.0f), 0.0, vec2_init_2f(0.0f, 555.0f), FALSE);
+	bottom_wall->world_transform = bottom_wall->previous_world_transform = transform_init_identity();
 
 	renderable_t *back_wall = &renderables[i++];
 	back_wall->material = material_init_lambertian();
@@ -201,26 +216,29 @@ render_queue_t cornell_box() {
 	back_wall->shape.mesh.quad_count = 1;
 	back_wall->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	back_wall->shape.mesh.quads[0] = quad_init_xy(vec2_init_2f(0.0f, 555.0f), vec2_init_2f(0.0f, 555.0f), 555.0f, TRUE);
-
-	renderable_t *light = &renderables[i++];
-	light->material = material_init_emissive();
-	light->material.emissive_texture = texture_init_constant(vec3_init_f(15.0f));
-	light->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
-	light->shape.mesh.quad_count = 1;
-	light->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
-	light->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(213.0f, 343.0f), 554.0f, vec2_init_2f(227.0f, 332.0f), TRUE);
+	back_wall->world_transform = back_wall->previous_world_transform = transform_init_identity();
 
 	renderable_t *box1 = &renderables[i++];
 	box1->material = material_init_lambertian();
 	box1->material.albedo_texture = texture_init_constant(vec3_init_f(0.75f));
 	box1->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
-	box1->shape.mesh = create_cube(vec3_init_3f(130, 0, 65), vec3_init_3f(295, 160, 230));
+	vec3_t min = vec3_init_3f(130, 0, 65);
+	vec3_t max = vec3_init_3f(295, 160, 230);
+	box1->shape.mesh = create_cube(-(max - min) / 2.0f, (max - min) / 2.0f);
+	box1->world_transform = box1->previous_world_transform = transform_init_identity();
+	box1->world_transform.translation = (min + max) / 2.0f;
+	box1->world_transform.rotation = mat3_init_axis_angles(vec3_init_3f(0.0f, 1.0f, 0.0f), to_rad(-18.0f));
 
-	renderable_t *box2 = &renderables[i++];
-	box2->material = material_init_lambertian();
-	box2->material.albedo_texture = texture_init_constant(vec3_init_f(0.75));
-	box2->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
-	box2->shape.mesh = create_cube(vec3_init_3f(265, 0, 295), vec3_init_3f(430, 330, 460));
+	renderable_t *tall_box = &renderables[i++];
+	tall_box->material = material_init_lambertian();
+	tall_box->material.albedo_texture = texture_init_constant(vec3_init_f(0.75));
+	tall_box->shape_type = RENDERABLE_SHAPE_TYPE_MESH;
+	min = vec3_init_3f(265, 0, 295);
+	max = vec3_init_3f(430, 330, 460);
+	tall_box->shape.mesh = create_cube(-(max - min) / 2.0f, (max - min) / 2.0f);
+	tall_box->world_transform = tall_box->previous_world_transform = transform_init_identity();
+	tall_box->world_transform.translation = (min + max) / 2.0f;
+	tall_box->world_transform.rotation = mat3_init_axis_angles(vec3_init_3f(0.0f, 1.0f, 0.0f), to_rad(15.0f));
 
 	render_queue_t rgraph;
 	rgraph.renderable_count = i;

@@ -35,9 +35,6 @@ typedef struct mesh_t {
 	quadrilateral_t *quads;
 	u32_t triangle_count;
 	u32_t quad_count;
-	vec3_t world_position;
-	vec3_t world_scale;
-	mat3_t world_rotation;
 } mesh_t;
 
 typedef enum renderable_shape_type_e {
@@ -54,7 +51,8 @@ typedef struct renderable_t {
 		mesh_t mesh;
 	} shape;
 	renderable_shape_type_e shape_type;
-	vec3_t previous_position;
+	transform_t world_transform;
+	transform_t previous_world_transform;
 	material_t material;
 } renderable_t;
 

@@ -89,32 +89,54 @@ bool_t render_queue_closest_hit(const render_queue_t *rgraph, const ray_t *ray, 
 		ray_hit_t hit;
 
 		if(renderable->shape_type == RENDERABLE_SHAPE_TYPE_SPHERE) {
-			const sphere_t *sphere = &rgraph->renderables[i].shape.sphere;
-			sphere_t new_sphere = *sphere;
-			if(!vec3_eq(sphere->center, rgraph->renderables[i].previous_position)) {
-				new_sphere.center = vec3_mix(sphere->center, rgraph->renderables[i].previous_position, rand_0f_to_1f());
+			const sphere_t *sphere = &renderable->shape.sphere;
+
+			sphere_t new_sphere = sphere_init(sphere->center + renderable->world_transform.translation, sphere->radius);
+			const sphere_t old_sphere =
+			    sphere_init(sphere->center + renderable->previous_world_transform.translation, sphere->radius);
+
+			if(!vec3_eq(new_sphere.center, old_sphere.center)) {
+				new_sphere.center = vec3_mix(new_sphere.center, old_sphere.center, rand_0f_to_1f());
 			}
 			if(ray_cast_sphere(ray, &new_sphere, t_min, t_max, &hit) && hit.t < closest_hit->t) {
 				*closest_hit = hit;
-				*hit_mtl = &rgraph->renderables[i].material;
+				*hit_mtl = &renderable->material;
 				has_hit = TRUE;
 			}
 		} else if(renderable->shape_type == RENDERABLE_SHAPE_TYPE_MESH) {
-			const mesh_t *mesh = &rgraph->renderables[i].shape.mesh;
+			// TODO won't work with scale
+			const mesh_t *mesh = &renderable->shape.mesh;
+			bool_t mesh_has_hit = FALSE;
+
+			const mat4_t trf = mat4_init_transform(&renderable->world_transform);
+			const mat4_t inv_trf = mat4_invert(&trf);
+			const mat3_t rot = mat3_init_mat4(&trf);
+			const mat3_t inv_rot = mat3_init_mat4(&inv_trf);
+			ray_t new_ray;
+			new_ray.origin =
+			    mat4_mul_vec4(&inv_trf, vec4_init_4f(ray->origin.x, ray->origin.y, ray->origin.z, 1.0f)).xyz;
+			new_ray.direction = mat3_mul_vec3(&inv_rot, ray->direction);
+
 			for(u32_t t = 0; t < mesh->triangle_count; ++t) {
-				if(ray_cast_triangle(ray, &mesh->triangles[t], t_min, t_max, &hit) && hit.t < closest_hit->t) {
+				if(ray_cast_triangle(&new_ray, &mesh->triangles[t], t_min, t_max, &hit) && hit.t < closest_hit->t) {
 					*closest_hit = hit;
-					*hit_mtl = &rgraph->renderables[i].material;
-					has_hit = TRUE;
+					*hit_mtl = &renderable->material;
+					mesh_has_hit = TRUE;
 				}
 			}
 
 			for(u32_t t = 0; t < mesh->quad_count; ++t) {
-				if(ray_cast_quad(ray, &mesh->quads[t], t_min, t_max, &hit) && hit.t < closest_hit->t) {
+				if(ray_cast_quad(&new_ray, &mesh->quads[t], t_min, t_max, &hit) && hit.t < closest_hit->t) {
 					*closest_hit = hit;
-					*hit_mtl = &rgraph->renderables[i].material;
-					has_hit = TRUE;
+					*hit_mtl = &renderable->material;
+					mesh_has_hit = TRUE;
 				}
+			}
+
+			if(mesh_has_hit) {
+				closest_hit->normal = mat3_mul_vec3(&rot, closest_hit->normal);
+				closest_hit->point = mat4_mul_vec4(&trf, vec4_init_vec3(closest_hit->point, 1.0f)).xyz;
+				has_hit = TRUE;
 			}
 		} else {
 			assert(0);
