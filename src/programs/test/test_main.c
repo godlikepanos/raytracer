@@ -384,7 +384,7 @@ int main(int argc, char **argv) {
 	u8_t *pixel_buffer = malloc(height * width * 3);
 	ctx.pixel_buffer = pixel_buffer;
 
-	const u32_t thread_count = 32;
+	const u32_t thread_count = get_gpu_core_count();
 	pthread_t threads[thread_count];
 	for(u32_t i = 0; i < thread_count; ++i) {
 		pthread_attr_t attr;
