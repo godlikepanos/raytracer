@@ -63,23 +63,24 @@ static inline texture_t texture_init_image(const char_t *filename) {
 
 // material_t
 static inline bool_t no_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                                ray_t *scattered_ray) {
+                                ray_t *scattered_ray, f32_t *pdf) {
 	(void)mtl;
 	(void)in_ray;
 	(void)hit;
 	(void)scattered_ray;
+	(void)pdf;
 	*attenuation = vec3_init_f(0.0f);
 	return FALSE;
 }
 
 bool_t lambertian_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                          ray_t *scattered_ray);
+                          ray_t *scattered_ray, f32_t *pdf);
 
 bool_t metal_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                     ray_t *scattered_ray);
+                     ray_t *scattered_ray, f32_t *pdf);
 
 bool_t dielectric_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                          ray_t *scattered_ray);
+                          ray_t *scattered_ray, f32_t *pdf);
 
 static inline vec3_t zero_emission(const struct material_t *mtl, const ray_hit_t *hit) {
 	(void)mtl;
@@ -91,11 +92,20 @@ static inline vec3_t constant_emission(const struct material_t *mtl, const ray_h
 	return mtl->emissive_texture.callback(&mtl->emissive_texture, hit->uv, hit->point);
 }
 
+static inline f32_t lambertian_scatter_ptf(const struct material_t *mtl, const ray_t *ray, const ray_hit_t *hit,
+                                           const ray_t *scattered_ray) {
+	(void)mtl;
+	(void)ray;
+	const f32_t l = vec3_dot(hit->normal, scattered_ray->direction);
+	return (l <= 0.0f) ? 0.0f : l / PI;
+}
+
 static inline material_t material_init_lambertian() {
 	material_t mtl;
 	memset(&mtl, 0, sizeof(mtl));
 	mtl.scatter_callback = lambertian_scatter;
 	mtl.emit_callback = zero_emission;
+	mtl.scatter_pdf_callback = lambertian_scatter_ptf;
 	return mtl;
 }
 

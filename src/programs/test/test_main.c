@@ -52,9 +52,12 @@ static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth,
 	if(render_queue_closest_hit(rgraph, ray, &hit, &hit_mtl)) {
 		ray_t new_ray;
 		vec3_t attenuation;
+		f32_t pdf;
 		const vec3_t emitted = hit_mtl->emit_callback(hit_mtl, &hit);
-		if(depth < max_depth && hit_mtl->scatter_callback(hit_mtl, ray, &hit, &attenuation, &new_ray)) {
-			color = emitted + attenuation * trace(rgraph, &new_ray, depth + 1, max_depth);
+		if(depth < max_depth && hit_mtl->scatter_callback(hit_mtl, ray, &hit, &attenuation, &new_ray, &pdf)) {
+			color = emitted
+			        + attenuation * hit_mtl->scatter_pdf_callback(hit_mtl, ray, &hit, &new_ray)
+			              * trace(rgraph, &new_ray, depth + 1, max_depth) / pdf;
 		} else {
 			color = emitted;
 		}
@@ -163,6 +166,9 @@ render_queue_t cornell_box() {
 	renderable_t *renderables = malloc(sizeof(renderable_t) * renderable_count);
 	memset(renderables, 0, sizeof(renderable_t) * renderable_count);
 	u32_t i = 0;
+	important_area_t *important_areas = malloc(sizeof(important_area_t) * 1);
+	memset(important_areas, 0, sizeof(*important_areas) * 1);
+	u32_t important_area_count = 0;
 
 	renderable_t *light = &renderables[i++];
 	light->material = material_init_emissive();
@@ -172,6 +178,10 @@ render_queue_t cornell_box() {
 	light->shape.mesh.quads = malloc(sizeof(quadrilateral_t) * 1);
 	light->shape.mesh.quads[0] = quad_init_xz(vec2_init_2f(213.0f, 343.0f), 554.0f, vec2_init_2f(227.0f, 332.0f), TRUE);
 	light->world_transform = light->previous_world_transform = transform_init_identity();
+
+	important_area_t *light_important_area = &important_areas[important_area_count++];
+	light_important_area->box =
+	    aabb_init(vec3_init_3f(213.0f, 554.0f, 227.0f), vec3_init_3f(343.0f, 554.0f + EPSILON, 332.0f));
 
 	renderable_t *left_wall = &renderables[i++];
 	left_wall->material = material_init_lambertian();
@@ -240,9 +250,13 @@ render_queue_t cornell_box() {
 	tall_box->world_transform.translation = (min + max) / 2.0f;
 	tall_box->world_transform.rotation = mat3_init_axis_angles(vec3_init_3f(0.0f, 1.0f, 0.0f), to_rad(15.0f));
 
-	render_queue_t rgraph;
+	render_queue_t rgraph = {
+	    0,
+	};
 	rgraph.renderable_count = i;
 	rgraph.renderables = renderables;
+	rgraph.important_areas = important_areas;
+	rgraph.important_area_count = important_area_count;
 	return rgraph;
 }
 
@@ -319,8 +333,8 @@ int main(int argc, char **argv) {
 	seed_mt(time(NULL));
 	srand(time(NULL));
 
-	const u32_t width = 1920 / 2;
-	const u32_t height = 1080 / 2;
+	const u32_t width = 500;
+	const u32_t height = 500;
 	const u32_t subsample_count = 128;
 
 	run_context_t ctx;
