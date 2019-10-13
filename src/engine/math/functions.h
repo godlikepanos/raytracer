@@ -144,7 +144,10 @@ static inline f32_t vec4_dot(vec4_t a, vec4_t b) {
 mat3_t mat3_init_identity();
 mat3_t mat3_init_mat4(const mat4_t *m4);
 mat3_t mat3_init_axis_angles(vec3_t axis, f32_t angle);
+mat3_t mat3_init_columns(vec3_t x, vec3_t y, vec3_t z);
 vec3_t mat3_mul_vec3(const mat3_t *m, vec3_t v);
+mat3_t mat3_orthonormal_basis(vec3_t z);
+vec3_t mat3_get_column(const mat3_t *m, u32_t column);
 
 // mat4_t
 mat4_t mat4_init_f(f32_t f);
@@ -277,3 +280,9 @@ static inline vec3_t random_in_unit_sphere() {
 	} while(vec3_length_squared(out) <= 1.0f - EPSILON);
 	return out;
 }
+
+static inline bool_t f32_is_zero(f32_t num) {
+	return fabs(num) <= EPSILON;
+}
+
+vec3_t random_cosine_direction();

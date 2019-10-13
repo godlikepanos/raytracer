@@ -4,6 +4,37 @@
 #include <engine/rendering/types.h>
 #include <external/stb_image.h>
 
+// pdf_t
+static inline pdf_t pdf_init_cosine(vec3_t z) {
+	pdf_t out;
+	out.cosine.orthonormal_basis = mat3_orthonormal_basis(z);
+	out.pdf_type = PDF_TYPE_COSINE;
+	return out;
+}
+
+static inline pdf_t pdf_init_hittable(const aabb_t *box) {
+	pdf_t out;
+	out.hittable.box = *box;
+	out.pdf_type = PDF_TYPE_HITTABLE;
+	return out;
+}
+
+static inline pdf_t pdf_init_mixture(const pdf_t *a, const pdf_t *b) {
+	assert(a && b);
+	assert(a->pdf_type >= PDF_TYPE_COSINE && a->pdf_type <= PDF_TYPE_HITTABLE);
+	assert(b->pdf_type >= PDF_TYPE_COSINE && b->pdf_type <= PDF_TYPE_HITTABLE);
+	pdf_t out;
+	out.mixture.pdfs[0] = a;
+	out.mixture.pdfs[1] = b;
+	out.mixture.pdf_count = 2;
+	out.pdf_type = PDF_TYPE_MIXTURE;
+	return out;
+}
+
+f32_t pdf_compute_value(const pdf_t *pdf, vec3_t direction);
+
+vec3_t pdf_generate(const pdf_t *pdf);
+
 // texture_t
 static inline vec3_t texture_constant(const struct texture_t *tex, vec2_t uv, vec3_t point) {
 	(void)uv;

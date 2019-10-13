@@ -335,7 +335,7 @@ int main(int argc, char **argv) {
 
 	const u32_t width = 500;
 	const u32_t height = 500;
-	const u32_t subsample_count = 128;
+	const u32_t subsample_count = 256;
 
 	run_context_t ctx;
 	memset(&ctx, 0, sizeof(ctx));

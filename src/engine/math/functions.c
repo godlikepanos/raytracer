@@ -46,6 +46,20 @@ mat3_t mat3_init_axis_angles(vec3_t axis, f32_t angle) {
 	return m;
 }
 
+mat3_t mat3_init_columns(vec3_t x, vec3_t y, vec3_t z) {
+	mat3_t out;
+	out.m[0][0] = x.x;
+	out.m[1][0] = x.y;
+	out.m[2][0] = x.z;
+	out.m[0][1] = y.x;
+	out.m[1][1] = y.y;
+	out.m[2][1] = y.z;
+	out.m[0][2] = z.x;
+	out.m[1][2] = z.y;
+	out.m[2][2] = z.z;
+	return out;
+}
+
 vec3_t mat3_mul_vec3(const mat3_t *m, vec3_t v) {
 	vec3_t out;
 	for(u32_t j = 0; j < 3; j++) {
@@ -55,6 +69,26 @@ vec3_t mat3_mul_vec3(const mat3_t *m, vec3_t v) {
 		}
 		out[j] = sum;
 	}
+	return out;
+}
+
+mat3_t mat3_orthonormal_basis(vec3_t z) {
+	z = vec3_normalize(z);
+
+	const vec3_t tmp = (fabs(z.x) < 0.9f) ? vec3_init_3f(1.0f, 0.0f, 0.0f) : vec3_init_3f(0.0f, 0.0f, -1.0f);
+	const vec3_t y = vec3_normalize(vec3_cross(z, tmp));
+
+	const vec3_t x = vec3_cross(y, z);
+
+	return mat3_init_columns(x, y, z);
+}
+
+vec3_t mat3_get_column(const mat3_t *m, u32_t column) {
+	assert(column < 3);
+	vec3_t out;
+	out.x = m->m[0][column];
+	out.y = m->m[1][column];
+	out.z = m->m[2][column];
 	return out;
 }
 
@@ -348,4 +382,14 @@ bool_t ray_intersects_aabb(const ray_t *ray, const aabb_t *box, f32_t tmin, f32_
 		}
 	}
 	return TRUE;
+}
+
+vec3_t random_cosine_direction() {
+	const f32_t r1 = rand_0f_to_1f();
+	const f32_t r2 = rand_0f_to_1f();
+	const f32_t z = sqrtf(1.0f - r2);
+	const f32_t phi = 2.0f * PI * r1;
+	const f32_t x = cos(phi) * sqrtf(r2);
+	const f32_t y = sin(phi) * sqrtf(r2);
+	return vec3_init_3f(x, y, z);
 }

@@ -6,6 +6,39 @@ static f32_t schlick(f32_t cosine, f32_t ref_idx) {
 	return r0 + (1.0f - r0) * powf(1.0f - cosine, 5.0f);
 }
 
+f32_t pdf_compute_value(const pdf_t *pdf, vec3_t direction) {
+	assert(f32_is_zero(vec3_length(direction) - 1.0f));
+
+	f32_t out;
+
+	switch(pdf->pdf_type) {
+	case PDF_TYPE_COSINE: {
+		const f32_t cosine = vec3_dot(direction, mat3_get_column(&pdf->cosine.orthonormal_basis, 2));
+		out = (cosine > 0.0f) ? cosine / PI : 0.0f;
+	} break;
+	default:
+		assert(0);
+		out = 0.0f;
+	}
+
+	return out;
+}
+
+vec3_t pdf_generate(const pdf_t *pdf) {
+	vec3_t out;
+
+	switch(pdf->pdf_type) {
+	case PDF_TYPE_COSINE:
+		out = mat3_mul_vec3(&pdf->cosine.orthonormal_basis, random_cosine_direction());
+		break;
+	default:
+		assert(0);
+		out = 0.0f;
+	}
+
+	return out;
+}
+
 bool_t lambertian_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
                           ray_t *scattered_ray, f32_t *pdf) {
 	(void)in_ray;
@@ -13,6 +46,7 @@ bool_t lambertian_scatter(const material_t *mtl, const ray_t *in_ray, const ray_
 	*scattered_ray = ray_init(hit->point, vec3_normalize(target));
 	*attenuation = mtl->albedo_texture.callback(&mtl->albedo_texture, hit->uv, hit->point);
 	*pdf = vec3_dot(hit->normal, scattered_ray->direction) / PI;
+	//*pdf = 0.5f / PI;
 	return TRUE;
 }
 

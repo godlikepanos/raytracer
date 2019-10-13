@@ -4,6 +4,35 @@
 
 struct material_t;
 struct texture_t;
+struct pdf_t;
+
+typedef enum {
+	PDF_TYPE_COSINE,
+	PDF_TYPE_HITTABLE,
+	PDF_TYPE_MIXTURE,
+} pdf_type_e;
+
+typedef struct pdf_t {
+	union {
+		// Cosine PDF
+		struct {
+			mat3_t orthonormal_basis;
+		} cosine;
+
+		// Hittable PDF
+		struct {
+			aabb_t box;
+		} hittable;
+
+		// Mixture PDF
+		struct {
+			const struct pdf_t *pdfs[8];
+			u32_t pdf_count;
+		} mixture;
+	};
+
+	pdf_type_e pdf_type;
+} pdf_t;
 
 typedef vec3_t (*texture_callback_t)(const struct texture_t *tex, vec2_t uv, vec3_t point);
 
