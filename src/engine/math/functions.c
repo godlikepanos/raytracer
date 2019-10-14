@@ -369,6 +369,39 @@ bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t
 	return FALSE;
 }
 
+bool_t ray_cast_aabb(const ray_t *ray, const aabb_t *box, f32_t t_min, f32_t t_max, ray_hit_t *hit) {
+	const vec3_t dirfrac = 1.0f / ray->direction;
+
+	const f32_t t1 = (box->min.x - ray->origin.x) * dirfrac.x;
+	const f32_t t2 = (box->max.x - ray->origin.x) * dirfrac.x;
+	const f32_t t3 = (box->min.y - ray->origin.y) * dirfrac.y;
+	const f32_t t4 = (box->max.y - ray->origin.y) * dirfrac.y;
+	const f32_t t5 = (box->min.z - ray->origin.z) * dirfrac.z;
+	const f32_t t6 = (box->max.z - ray->origin.z) * dirfrac.z;
+
+	const f32_t tmin = MAX(MAX(MIN(t1, t2), MIN(t3, t4)), MIN(t5, t6));
+	const f32_t tmax = MIN(MIN(MAX(t1, t2), MAX(t3, t4)), MAX(t5, t6));
+
+	if(tmax < 0.0f) {
+		return FALSE;
+	}
+
+	if(tmin > tmax) {
+		return FALSE;
+	}
+
+	const f32_t t = tmin;
+	if(t < t_min || t > t_max) {
+		return FALSE;
+	}
+
+	hit->t = t;
+	hit->normal = ray->direction;
+	hit->point = ray->origin + ray->direction * hit->t;
+	hit->uv = vec2_init_f(0.0f); // TODO
+	return TRUE;
+}
+
 bool_t ray_intersects_aabb(const ray_t *ray, const aabb_t *box, f32_t tmin, f32_t tmax) {
 	for(u32_t a = 0; a < 3; ++a) {
 		const f32_t l = (box->min[a] - ray->origin[a]) / ray->direction[a];

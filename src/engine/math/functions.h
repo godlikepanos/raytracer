@@ -218,6 +218,7 @@ bool_t ray_cast_sphere(const ray_t *ray, const sphere_t *sphere, f32_t t_min, f3
 bool_t ray_cast_plane(const ray_t *ray, const plane_t *plane, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 bool_t ray_cast_triangle(const ray_t *ray, const triangle_t *tri, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 bool_t ray_cast_quad(const ray_t *ray, const quadrilateral_t *quad, f32_t t_min, f32_t t_max, ray_hit_t *hit);
+bool_t ray_cast_aabb(const ray_t *ray, const aabb_t *box, f32_t t_min, f32_t t_max, ray_hit_t *hit);
 
 bool_t ray_intersects_aabb(const ray_t *ray, const aabb_t *box, f32_t tmin, f32_t tmax);
 

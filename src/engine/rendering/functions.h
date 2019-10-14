@@ -12,9 +12,10 @@ static inline pdf_t pdf_init_cosine(vec3_t z) {
 	return out;
 }
 
-static inline pdf_t pdf_init_hittable(const aabb_t *box) {
+static inline pdf_t pdf_init_hittable(const aabb_t *box, vec3_t ray_origin) {
 	pdf_t out;
 	out.hittable.box = *box;
+	out.hittable.ray_origin = ray_origin;
 	out.pdf_type = PDF_TYPE_HITTABLE;
 	return out;
 }

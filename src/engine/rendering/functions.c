@@ -15,7 +15,35 @@ f32_t pdf_compute_value(const pdf_t *pdf, vec3_t direction) {
 	case PDF_TYPE_COSINE: {
 		const f32_t cosine = vec3_dot(direction, mat3_get_column(&pdf->cosine.orthonormal_basis, 2));
 		out = (cosine > 0.0f) ? cosine / PI : 0.0f;
-	} break;
+		break;
+	}
+	case PDF_TYPE_HITTABLE: {
+		ray_t ray;
+		ray.origin = pdf->hittable.ray_origin;
+		ray.direction = direction;
+		ray_hit_t hit;
+		if(ray_cast_aabb(&ray, &pdf->hittable.box, 0.01f, FLT_MAX, &hit)) {
+			const f32_t volume = (pdf->hittable.box.max.x - pdf->hittable.box.min.x)
+			                     * (pdf->hittable.box.max.y - pdf->hittable.box.min.y)
+			                     * (pdf->hittable.box.max.z - pdf->hittable.box.min.z);
+
+			const f32_t dist_sq = hit.t * hit.t;
+			const f32_t cosine = fabs(vec3_dot(direction, hit.normal));
+			out = dist_sq / (cosine * volume);
+		} else {
+			out = 0.0f;
+		}
+
+		break;
+	}
+	case PDF_TYPE_MIXTURE: {
+		const f32_t factor = 1.0f / (f32_t)pdf->mixture.pdf_count;
+		out = 0.0f;
+		for(u32_t i = 0; i < pdf->mixture.pdf_count; ++i) {
+			out = factor * pdf_compute_value(pdf->mixture.pdfs[i], direction);
+		}
+		break;
+	}
 	default:
 		assert(0);
 		out = 0.0f;
@@ -31,6 +59,15 @@ vec3_t pdf_generate(const pdf_t *pdf) {
 	case PDF_TYPE_COSINE:
 		out = mat3_mul_vec3(&pdf->cosine.orthonormal_basis, random_cosine_direction());
 		break;
+	case PDF_TYPE_HITTABLE: {
+		vec3_t random;
+		for(u32_t i = 0; i < 3; ++i) {
+			random[i] =
+			    pdf->hittable.box.min[i] + (pdf->hittable.box.max[i] - pdf->hittable.box.min[i]) * rand_0f_to_1f();
+		}
+		out = random - pdf->hittable.ray_origin;
+		break;
+	}
 	default:
 		assert(0);
 		out = 0.0f;

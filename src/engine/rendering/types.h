@@ -6,6 +6,7 @@ struct material_t;
 struct texture_t;
 struct pdf_t;
 
+// ** PDF **
 typedef enum {
 	PDF_TYPE_COSINE,
 	PDF_TYPE_HITTABLE,
@@ -22,6 +23,7 @@ typedef struct pdf_t {
 		// Hittable PDF
 		struct {
 			aabb_t box;
+			vec3_t ray_origin;
 		} hittable;
 
 		// Mixture PDF
@@ -34,6 +36,7 @@ typedef struct pdf_t {
 	pdf_type_e pdf_type;
 } pdf_t;
 
+// ** Textures **
 typedef vec3_t (*texture_callback_t)(const struct texture_t *tex, vec2_t uv, vec3_t point);
 
 typedef struct texture_t {
@@ -45,6 +48,7 @@ typedef struct texture_t {
 	texture_callback_t callback;
 } texture_t;
 
+// ** Materials **
 typedef bool_t (*scatter_callback_t)(const struct material_t *mtl, const ray_t *ray, const ray_hit_t *hit,
                                      vec3_t *attenuation, ray_t *scattered_ray, f32_t *pdf);
 
@@ -63,6 +67,7 @@ typedef struct material_t {
 	texture_t emissive_texture;
 } material_t;
 
+// ** Render Queue **
 typedef struct mesh_t {
 	triangle_t *triangles;
 	quadrilateral_t *quads;
@@ -101,6 +106,7 @@ typedef struct render_queue_t {
 	u32_t important_area_count;
 } render_queue_t;
 
+// ** BVH **
 typedef struct bvh_node_t {
 	aabb_t box;
 	struct bvh_node_t *left;
