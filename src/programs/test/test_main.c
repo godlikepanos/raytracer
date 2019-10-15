@@ -50,14 +50,23 @@ static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth,
 	vec3_t color = {0};
 
 	if(render_queue_closest_hit(rgraph, ray, &hit, &hit_mtl)) {
-		ray_t new_ray;
+		ray_t scatter_ray;
 		vec3_t attenuation;
 		f32_t pdf;
 		const vec3_t emitted = hit_mtl->emit_callback(hit_mtl, &hit);
-		if(depth < max_depth && hit_mtl->scatter_callback(hit_mtl, ray, &hit, &attenuation, &new_ray, &pdf)) {
+		if(depth < max_depth && hit_mtl->scatter_callback(hit_mtl, ray, &hit, &attenuation, &scatter_ray, &pdf)) {
+			pdf_t hittable_pdf = pdf_init_hittable(&rgraph->important_areas[0].box, hit.point);
+			pdf_t cosine_pdf = pdf_init_cosine(hit.normal);
+			pdf_t mix_pdf = pdf_init_mixture(&hittable_pdf, &cosine_pdf);
+
+			scatter_ray.origin = hit.point;
+			scatter_ray.direction = pdf_generate(&mix_pdf);
+			pdf = pdf_compute_value(&mix_pdf, scatter_ray.direction);
+
 			color = emitted
-			        + attenuation * hit_mtl->scatter_pdf_callback(hit_mtl, ray, &hit, &new_ray)
-			              * trace(rgraph, &new_ray, depth + 1, max_depth) / pdf;
+			        + attenuation * hit_mtl->scatter_pdf_callback(hit_mtl, ray, &hit, &scatter_ray)
+			              * trace(rgraph, &scatter_ray, depth + 1, max_depth) / pdf;
+			color = vec3_de_nan(color);
 		} else {
 			color = emitted;
 		}
@@ -335,7 +344,7 @@ int main(int argc, char **argv) {
 
 	const u32_t width = 500;
 	const u32_t height = 500;
-	const u32_t subsample_count = 256;
+	const u32_t subsample_count = 8;
 
 	run_context_t ctx;
 	memset(&ctx, 0, sizeof(ctx));

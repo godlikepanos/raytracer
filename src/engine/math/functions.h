@@ -32,7 +32,7 @@ static inline vec2_t vec2_init_2f(f32_t x, f32_t y) {
 }
 
 static inline vec2_t vec2_mix(vec2_t a, vec2_t b, vec2_t f) {
-	return a * (vec2_init_f(1.0f) - f) + b * f;
+	return a * (1.0f - f) + b * f;
 }
 
 // vec3_t
@@ -92,8 +92,8 @@ static inline vec3_t vec3_cross(vec3_t a, vec3_t b) {
 	return dest;
 }
 
-static inline vec3_t vec3_mix(vec3_t a, vec3_t b, f32_t f) {
-	return a * vec3_init_f(1.0f - f) + b * vec3_init_f(f);
+static inline vec3_t vec3_mix(vec3_t a, vec3_t b, vec3_t f) {
+	return a * (1.0f - f) + b * f;
 }
 
 static inline vec3_t vec3_clamp(vec3_t a, vec3_t min_v, vec3_t max_v) {
@@ -118,6 +118,13 @@ static inline bool_t vec3_refract(vec3_t v, vec3_t n, f32_t ni_over_nt, vec3_t *
 	} else {
 		return FALSE;
 	}
+}
+
+static inline vec3_t vec3_de_nan(vec3_t c) {
+	for(u32_t i = 0; i < 3; ++i) {
+		c[i] = !(c[i] == c[i]) ? 0.0f : c[i];
+	}
+	return c;
 }
 
 // vec4_t

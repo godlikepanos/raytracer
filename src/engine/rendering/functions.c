@@ -18,13 +18,11 @@ f32_t pdf_compute_value(const pdf_t *pdf, vec3_t direction) {
 		break;
 	}
 	case PDF_TYPE_HITTABLE: {
-		ray_t ray;
-		ray.origin = pdf->hittable.ray_origin;
-		ray.direction = direction;
+		ray_t ray = ray_init(pdf->hittable.ray_origin, direction);
 		ray_hit_t hit;
 		if(ray_cast_aabb(&ray, &pdf->hittable.box, 0.01f, FLT_MAX, &hit)) {
 			const f32_t volume = (pdf->hittable.box.max.x - pdf->hittable.box.min.x)
-			                     * (pdf->hittable.box.max.y - pdf->hittable.box.min.y)
+			                     //* (pdf->hittable.box.max.y - pdf->hittable.box.min.y) TODO
 			                     * (pdf->hittable.box.max.z - pdf->hittable.box.min.z);
 
 			const f32_t dist_sq = hit.t * hit.t;
@@ -40,7 +38,7 @@ f32_t pdf_compute_value(const pdf_t *pdf, vec3_t direction) {
 		const f32_t factor = 1.0f / (f32_t)pdf->mixture.pdf_count;
 		out = 0.0f;
 		for(u32_t i = 0; i < pdf->mixture.pdf_count; ++i) {
-			out = factor * pdf_compute_value(pdf->mixture.pdfs[i], direction);
+			out += factor * pdf_compute_value(pdf->mixture.pdfs[i], direction);
 		}
 		break;
 	}
@@ -53,24 +51,28 @@ f32_t pdf_compute_value(const pdf_t *pdf, vec3_t direction) {
 }
 
 vec3_t pdf_generate(const pdf_t *pdf) {
-	vec3_t out;
+	vec3_t out = 0.0f;
 
 	switch(pdf->pdf_type) {
 	case PDF_TYPE_COSINE:
 		out = mat3_mul_vec3(&pdf->cosine.orthonormal_basis, random_cosine_direction());
 		break;
 	case PDF_TYPE_HITTABLE: {
-		vec3_t random;
-		for(u32_t i = 0; i < 3; ++i) {
-			random[i] =
-			    pdf->hittable.box.min[i] + (pdf->hittable.box.max[i] - pdf->hittable.box.min[i]) * rand_0f_to_1f();
-		}
-		out = random - pdf->hittable.ray_origin;
+		const vec3_t random = vec3_mix(pdf->hittable.box.min, pdf->hittable.box.max,
+		                               vec3_init_3f(rand_0f_to_1f(), rand_0f_to_1f(), rand_0f_to_1f()));
+		out = vec3_normalize(random - pdf->hittable.ray_origin);
+		break;
+	}
+	case PDF_TYPE_MIXTURE: {
+		const f32_t r = rand_0f_to_1f();
+		const f32_t idxf = r * (f32_t)pdf->mixture.pdf_count;
+		const u32_t idx = MIN((u32_t)idxf, pdf->mixture.pdf_count - 1);
+
+		out = pdf_generate(pdf->mixture.pdfs[idx]);
 		break;
 	}
 	default:
 		assert(0);
-		out = 0.0f;
 	}
 
 	return out;
