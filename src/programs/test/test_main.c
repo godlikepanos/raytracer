@@ -50,22 +50,21 @@ static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth,
 	vec3_t color = {0};
 
 	if(render_queue_closest_hit(rgraph, ray, &hit, &hit_mtl)) {
-		ray_t scatter_ray;
 		vec3_t attenuation;
-		f32_t pdf;
+		pdf_t mtl_pdf;
 		const vec3_t emitted = hit_mtl->emit_callback(hit_mtl, &hit);
-		if(depth < max_depth && hit_mtl->scatter_callback(hit_mtl, ray, &hit, &attenuation, &scatter_ray, &pdf)) {
+		if(depth < max_depth && hit_mtl->scatter_callback(hit_mtl, ray, &hit, &attenuation, &mtl_pdf)) {
 			pdf_t hittable_pdf = pdf_init_hittable(&rgraph->important_areas[0].box, hit.point);
-			pdf_t cosine_pdf = pdf_init_cosine(hit.normal);
-			pdf_t mix_pdf = pdf_init_mixture(&hittable_pdf, &cosine_pdf);
+			pdf_t mix_pdf = pdf_init_mixture(&hittable_pdf, &mtl_pdf);
 
+			ray_t scatter_ray;
 			scatter_ray.origin = hit.point;
 			scatter_ray.direction = pdf_generate(&mix_pdf);
-			pdf = pdf_compute_value(&mix_pdf, scatter_ray.direction);
+			const f32_t pdf_val = pdf_compute_value(&mix_pdf, scatter_ray.direction);
 
-			color = emitted
-			        + attenuation * hit_mtl->scatter_pdf_callback(hit_mtl, ray, &hit, &scatter_ray)
-			              * trace(rgraph, &scatter_ray, depth + 1, max_depth) / pdf;
+			color = attenuation * hit_mtl->scattering_pdf_callback(hit_mtl, ray, &hit, &scatter_ray);
+			color *= trace(rgraph, &scatter_ray, depth + 1, max_depth) / pdf_val;
+			color += emitted;
 			color = vec3_de_nan(color);
 		} else {
 			color = emitted;
@@ -84,6 +83,7 @@ static vec3_t trace(const render_queue_t *rgraph, const ray_t *ray, u32_t depth,
 	return color;
 }
 
+#if 0
 static void init_sphere_lambertian(vec3_t pos, vec3_t prev_pos, f32_t radius, vec3_t color, renderable_t *r) {
 	r->shape.sphere = sphere_init(vec3_init_f(0.0f), radius);
 	r->shape_type = RENDERABLE_SHAPE_TYPE_SPHERE;
@@ -169,6 +169,7 @@ static render_queue_t random_scene() {
 	rgraph.renderables = spheres;
 	return rgraph;
 }
+#endif
 
 render_queue_t cornell_box() {
 	const u32_t renderable_count = 8;
@@ -344,14 +345,14 @@ int main(int argc, char **argv) {
 
 	const u32_t width = 500;
 	const u32_t height = 500;
-	const u32_t subsample_count = 8;
+	const u32_t subsample_count = 16;
 
 	run_context_t ctx;
 	memset(&ctx, 0, sizeof(ctx));
 	ctx.tile_size = 64;
 	ctx.width = width;
 	ctx.height = height;
-	ctx.max_trace_depth = 8;
+	ctx.max_trace_depth = 2;
 	vec2_t subsamples[subsample_count];
 	ctx.subsamples = subsamples;
 	ctx.subsample_count = subsample_count;

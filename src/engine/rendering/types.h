@@ -49,18 +49,18 @@ typedef struct texture_t {
 } texture_t;
 
 // ** Materials **
-typedef bool_t (*scatter_callback_t)(const struct material_t *mtl, const ray_t *ray, const ray_hit_t *hit,
-                                     vec3_t *attenuation, ray_t *scattered_ray, f32_t *pdf);
+typedef bool_t (*scatter_callback_t)(const struct material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit,
+                                     vec3_t *attenuation, pdf_t *pdf);
 
-typedef f32_t (*scatter_pdf_callback_t)(const struct material_t *mtl, const ray_t *ray, const ray_hit_t *hit,
-                                        const ray_t *scattered_ray);
+typedef f32_t (*scattering_pdf_callback_t)(const struct material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit,
+                                           const ray_t *scattered_ray);
 
 typedef vec3_t (*emit_callback_t)(const struct material_t *mtl, const ray_hit_t *hit);
 
 typedef struct material_t {
 	scatter_callback_t scatter_callback;
 	emit_callback_t emit_callback;
-	scatter_pdf_callback_t scatter_pdf_callback;
+	scattering_pdf_callback_t scattering_pdf_callback;
 	texture_t albedo_texture;
 	texture_t metal_fuzz_texture;
 	texture_t dielectric_reflection_index;

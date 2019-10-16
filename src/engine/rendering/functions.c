@@ -79,62 +79,11 @@ vec3_t pdf_generate(const pdf_t *pdf) {
 }
 
 bool_t lambertian_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                          ray_t *scattered_ray, f32_t *pdf) {
+                          pdf_t *pdf) {
 	(void)in_ray;
 	const vec3_t target = hit->normal + random_in_unit_sphere();
-	*scattered_ray = ray_init(hit->point, vec3_normalize(target));
 	*attenuation = mtl->albedo_texture.callback(&mtl->albedo_texture, hit->uv, hit->point);
-	*pdf = vec3_dot(hit->normal, scattered_ray->direction) / PI;
-	//*pdf = 0.5f / PI;
-	return TRUE;
-}
-
-bool_t metal_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                     ray_t *scattered_ray, f32_t *pdf) {
-	const vec3_t reflected = vec3_normalize(vec3_reflect(in_ray->direction, hit->normal));
-	const f32_t metal_fuzz =
-	    mtl->metal_fuzz_texture.callback(&mtl->metal_fuzz_texture, vec2_init_f(0.0f), hit->point).x;
-	const vec3_t target = reflected + random_in_unit_sphere() * metal_fuzz;
-	*scattered_ray = ray_init(hit->point, vec3_normalize(target));
-	*attenuation = mtl->albedo_texture.callback(&mtl->albedo_texture, vec2_init_f(0.0f), hit->point);
-	*pdf = 0.0f; // TODO
-	return vec3_dot(reflected, hit->normal) > 0.0f;
-}
-
-bool_t dielectric_scatter(const material_t *mtl, const ray_t *in_ray, const ray_hit_t *hit, vec3_t *attenuation,
-                          ray_t *scattered_ray, f32_t *pdf) {
-	vec3_t outward_normal;
-	const vec3_t reflected = vec3_normalize(vec3_reflect(in_ray->direction, hit->normal));
-	f32_t ni_over_nt;
-	f32_t cosine;
-	*attenuation = vec3_init_3f(1.0f, 1.0f, 1.0f);
-	const f32_t refl_idx =
-	    mtl->dielectric_reflection_index.callback(&mtl->dielectric_reflection_index, vec2_init_f(0.0f), hit->point).x;
-	if(vec3_dot(in_ray->direction, hit->normal) > 0.0f) {
-		outward_normal = -hit->normal;
-		ni_over_nt = refl_idx;
-		cosine = refl_idx * vec3_dot(in_ray->direction, hit->normal);
-	} else {
-		outward_normal = hit->normal;
-		ni_over_nt = 1.0f / refl_idx;
-		cosine = -vec3_dot(in_ray->direction, hit->normal);
-	}
-
-	vec3_t refracted;
-	f32_t reflect_probe;
-	if(vec3_refract(in_ray->direction, outward_normal, ni_over_nt, &refracted)) {
-		reflect_probe = schlick(cosine, refl_idx);
-	} else {
-		reflect_probe = 1.0f;
-	}
-
-	if(rand_0f_to_1f() < reflect_probe) {
-		*scattered_ray = ray_init(hit->point, reflected);
-	} else {
-		*scattered_ray = ray_init(hit->point, refracted);
-	}
-
-	*pdf = 0.0f; // TODO
+	*pdf = pdf_init_cosine(hit->normal);
 	return TRUE;
 }
 
